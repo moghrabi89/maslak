@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, CardHeader, CardContent } from "@heroui/react";
-import { BookOpen, CheckCircle, Users, ArrowLeft } from "lucide-react";
+import { BarChart3, BookOpen, CheckCircle, Users, ArrowLeft } from "lucide-react";
 
 export default function AdminPage() {
   const stats = [
@@ -37,7 +37,7 @@ export default function AdminPage() {
       </div>
 
       {/* Navigation cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
         <Card className="glass-panel border-slate-800/80 text-slate-100 hover:border-brand-emerald-500/20 transition-all">
           <CardHeader className="pb-1">
             <h3 className="font-extrabold text-slate-200 text-lg">إدارة المناهج والمتون</h3>
@@ -70,6 +70,24 @@ export default function AdminPage() {
             >
               <span>فتح طابور المراجعة</span>
               <ArrowLeft className="w-4 h-4" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel border-slate-800/80 text-slate-100 hover:border-sky-500/20 transition-all">
+          <CardHeader className="pb-1">
+            <h3 className="font-extrabold text-slate-200 text-lg">التحليلات التعليمية</h3>
+          </CardHeader>
+          <CardContent className="py-4 space-y-4">
+            <p className="text-xs text-slate-400 leading-relaxed">
+              متابعة مواطن التعثر، أكثر المفاهيم خطأ، الأسئلة الملتبسة، ومؤشرات النشاط دون كشف بيانات الطلاب الحساسة.
+            </p>
+            <Link 
+              href="/admin/analytics"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-400 hover:text-sky-300"
+            >
+              <span>فتح التحليلات</span>
+              <BarChart3 className="w-4 h-4" />
             </Link>
           </CardContent>
         </Card>

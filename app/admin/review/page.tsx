@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { 
   Card, 
-  CardHeader, 
   CardContent, 
   Button, 
   Modal, 
@@ -15,15 +14,12 @@ import {
 import { 
   CheckCircle, 
   AlertTriangle, 
-  XCircle, 
   FileText, 
-  Bookmark, 
   Sparkles, 
   Loader2, 
   RefreshCw, 
   Check, 
   History,
-  Eye
 } from "lucide-react";
 import { 
   getPendingReviews, 
@@ -32,29 +28,81 @@ import {
   requestChangesEntity, 
   rejectEntity 
 } from "@/actions/review";
-import { generateQuestion } from "@/lib/generator";
-import { getLessonFullData } from "@/actions/content";
+import {
+  generateQuestion,
+  type Concept,
+  type ConceptData,
+  type GeneratedQuestion,
+  type QuestionTemplate,
+} from "@/lib/generator";
+
+type PendingReviews = Awaited<ReturnType<typeof getPendingReviews>>;
+type PendingLesson = PendingReviews["lessons"][number];
+type PendingConcept = PendingReviews["concepts"][number];
+type ReviewLogs = Awaited<ReturnType<typeof getReviewLogs>>;
+type ReviewEntityType = "lesson" | "concept" | "question_template";
+
+interface DecisionEntity {
+  id: string;
+  title: string;
+  entityType: ReviewEntityType;
+}
+
+const previewTemplates: QuestionTemplate[] = [
+  {
+    id: "tmpl_recall_pillar",
+    type: "recall",
+    difficulty: "easy",
+    templateText: "أي مما يلي يعتبر ركناً/فرضاً من فروض {concept}؟",
+    explanationTemplate: "نعم! يعتبر ({item}) ركناً أساسياً من أركان {concept} كما ورد في المتن المعتمد.",
+  },
+  {
+    id: "tmpl_distinguish_condition",
+    type: "distinguish",
+    difficulty: "medium",
+    templateText: "أي مما يلي ليس من شروط صحة {concept}؟",
+    explanationTemplate: "إجابة صحيحة! ({item}) ليس من شروط {concept}.",
+  },
+  {
+    id: "tmpl_apply_ruling",
+    type: "apply",
+    difficulty: "hard",
+    templateText: "توضأ شخص ثم {scenario}، ما حكم وضوئه وطهارته في مذهب الشافعية؟",
+    explanationTemplate: "صحيح! حكمه هو: ({item}). العلة هي: {reason}.",
+  },
+];
+
+function toGeneratorConcept(concept: PendingConcept): Concept {
+  return {
+    id: concept.id,
+    conceptName: concept.conceptName,
+    category: concept.category,
+    notesForAdvancedStudents: concept.notesForAdvancedStudents,
+    data: concept.data as ConceptData,
+  };
+}
+
+function countConceptItems(concept: PendingConcept, key: keyof ConceptData) {
+  const data = concept.data as Partial<ConceptData>;
+  const value = data[key];
+  return Array.isArray(value) ? value.length : 0;
+}
 
 export default function AdminReviewPage() {
-  const [pending, setPending] = useState<any>({ lessons: [], concepts: [], templates: [] });
-  const [logs, setLogs] = useState<any[]>([]);
+  const [pending, setPending] = useState<PendingReviews>({ lessons: [], concepts: [], templates: [] });
+  const [logs, setLogs] = useState<ReviewLogs>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"pending" | "logs">("pending");
   
   // Dialog states
-  const [selectedEntity, setSelectedEntity] = useState<any | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<DecisionEntity | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
   const [decisionType, setDecisionType] = useState<"approve" | "changes" | "reject">("approve");
   
   // Interactive testing of generator
-  const [previewQuestion, setPreviewQuestion] = useState<any | null>(null);
+  const [previewQuestion, setPreviewQuestion] = useState<GeneratedQuestion | null>(null);
   const [generatingPreview, setGeneratingPreview] = useState(false);
-
-  // Load reviews on mount
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -65,8 +113,29 @@ export default function AdminReviewPage() {
     setLoading(false);
   };
 
+  // Load reviews on mount
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadInitialData() {
+      setLoading(true);
+      const pendingData = await getPendingReviews();
+      const logsData = await getReviewLogs();
+      if (!isActive) return;
+      setPending(pendingData);
+      setLogs(logsData);
+      setLoading(false);
+    }
+
+    void loadInitialData();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   // Decisions
-  const openDecisionModal = (entity: any, type: "approve" | "changes" | "reject") => {
+  const openDecisionModal = (entity: DecisionEntity, type: "approve" | "changes" | "reject") => {
     setSelectedEntity(entity);
     setDecisionType(type);
     setReviewNotes("");
@@ -93,55 +162,16 @@ export default function AdminReviewPage() {
   };
 
   // Generate question preview dynamically
-  const handlePreviewQuestion = async (concept: any) => {
+  const handlePreviewQuestion = async (concept: PendingConcept) => {
     setGeneratingPreview(true);
-    
-    // Fetch full lesson data to get the concept + list of all concepts for distractors
-    const fullData = await getLessonFullData(concept.lessonId);
-    
-    // Create mock templates to test question generation
-    const mockTemplates: any[] = [
-      {
-        id: "tmpl_recall_pillar",
-        type: "recall",
-        difficulty: "easy",
-        templateText: "أي مما يلي يعتبر ركناً/فرضاً من فروض {concept}؟",
-        explanationTemplate: "نعم! يعتبر ({item}) ركناً أساسياً من أركان {concept} كما ورد في المتن المعتمد."
-      },
-      {
-        id: "tmpl_distinguish_condition",
-        type: "distinguish",
-        difficulty: "medium",
-        templateText: "أي مما يلي ليس من شروط صحة {concept}؟",
-        explanationTemplate: "إجابة صحيحة! ({item}) ليس من شروط {concept}."
-      },
-      {
-        id: "tmpl_apply_ruling",
-        type: "apply",
-        difficulty: "hard",
-        templateText: "توضأ شخص ثم {scenario}، ما حكم وضوئه وطهارته في مذهب الشافعية؟",
-        explanationTemplate: "صحيح! حكمه هو: ({item}). العلة هي: {reason}."
-      }
-    ];
-
-    // Select random template to simulate generator
-    const chosenTemplate = mockTemplates[Math.floor(Math.random() * mockTemplates.length)];
+    const chosenTemplate = previewTemplates[concept.id.length % previewTemplates.length];
 
     // Fetch other concepts to pass as allConcepts (for distractors)
     const pendingData = await getPendingReviews();
-    const allConcepts = [concept, ...pendingData.concepts]; // Fallback minimum list
+    const allConcepts = [concept, ...pendingData.concepts].map(toGeneratorConcept);
 
     try {
-      // Compile concept model compatible with generator
-      const formattedConcept = {
-        id: concept.id,
-        conceptName: concept.conceptName,
-        category: concept.category,
-        notesForAdvancedStudents: concept.notesForAdvancedStudents,
-        data: concept.data as any
-      };
-
-      const q = generateQuestion(formattedConcept, chosenTemplate, allConcepts);
+      const q = generateQuestion(toGeneratorConcept(concept), chosenTemplate, allConcepts);
       setPreviewQuestion(q);
     } catch (err) {
       console.error(err);
@@ -149,7 +179,9 @@ export default function AdminReviewPage() {
         questionPrompt: "تعذر التوليد لعدم اكتمال بيانات المفهوم (الشرط أو الركن).",
         options: ["خيارات غير متوفرة"],
         correctAnswer: "خطأ",
-        explanation: "يرجى التحقق من ملء المصفوفات بشكل صحيح في محرر المحتوى."
+        explanation: "يرجى التحقق من ملء المصفوفات بشكل صحيح في محرر المحتوى.",
+        difficulty: "easy",
+        type: "recall",
       });
     }
     
@@ -218,7 +250,7 @@ export default function AdminReviewPage() {
               <div className="space-y-4">
                 
                 {/* 1. Lessons pending */}
-                {pending.lessons.map((lesson: any) => (
+                {pending.lessons.map((lesson: PendingLesson) => (
                   <Card key={lesson.id} className="glass-panel border-slate-800 text-slate-100">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex justify-between items-start gap-2">
@@ -255,7 +287,7 @@ export default function AdminReviewPage() {
                 ))}
 
                 {/* 2. Concepts pending */}
-                {pending.concepts.map((concept: any) => (
+                {pending.concepts.map((concept: PendingConcept) => (
                   <Card key={concept.id} className="glass-panel border-slate-850 text-slate-100">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex justify-between items-start gap-2">
@@ -284,16 +316,16 @@ export default function AdminReviewPage() {
                         <span className="text-slate-400 font-bold">عناصر البيانات المهيكلة (JSON arrays):</span>
                         <div className="flex flex-wrap gap-2">
                           <span className="bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                            أركان: {concept.data.pillars?.length || 0}
+                            أركان: {countConceptItems(concept, "pillars")}
                           </span>
                           <span className="bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                            شروط: {concept.data.conditions?.length || 0}
+                            شروط: {countConceptItems(concept, "conditions")}
                           </span>
                           <span className="bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                            نواقض: {concept.data.invalidators?.length || 0}
+                            نواقض: {countConceptItems(concept, "invalidators")}
                           </span>
                           <span className="bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                            فروع: {concept.data.rulings?.length || 0}
+                            فروع: {countConceptItems(concept, "rulings")}
                           </span>
                         </div>
                       </div>
@@ -385,7 +417,7 @@ export default function AdminReviewPage() {
                   </div>
                 ) : (
                   <div className="text-center py-10 text-slate-500 text-xs">
-                    اختر "تجربة المولد" لمعاينة واختبار الأسئلة التي سيطرحها محرك التوليد على الطلاب قبل اعتماد المفهوم.
+                    اختر &quot;تجربة المولد&quot; لمعاينة واختبار الأسئلة التي سيطرحها محرك التوليد على الطلاب قبل اعتماد المفهوم.
                   </div>
                 )}
               </CardContent>
@@ -421,7 +453,7 @@ export default function AdminReviewPage() {
                       
                       {log.notes && (
                         <p className="text-slate-300 italic pt-1">
-                          " {log.notes} "
+                          &quot; {log.notes} &quot;
                         </p>
                       )}
                     </div>
@@ -467,7 +499,7 @@ export default function AdminReviewPage() {
             
             {decisionType === "approve" && (
               <div className="bg-brand-emerald-500/5 p-3 rounded-xl border border-brand-emerald-500/10 text-[10px] text-brand-emerald-400 leading-relaxed">
-                ⚠️ <b>تنبيه الحوكمة:</b> باعتماد هذا الكيان، سيتم رفعه تلقائياً للنشر الفوري وعرضه للطلاب في التحديات، كما سترتفع نسبة الثقة العلمية للمفهوم (`scientificConfidence`) إلى <b>100%</b> فورياً.
+                ⚠️ <b>تنبيه الحوكمة:</b> باعتماد هذا الكيان، سيتم رفعه تلقائياً للنشر الفوري وعرضه للطلاب في التحديات، كما سترتفع نسبة الثقة العلمية للمفهوم <code>scientificConfidence</code> إلى <b>100%</b> فورياً.
               </div>
             )}
           </ModalBody>

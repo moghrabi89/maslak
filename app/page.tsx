@@ -24,7 +24,7 @@ export default function Home() {
         </div>
 
         <p className="max-w-2xl text-base md:text-lg text-slate-400 leading-relaxed">
-          تعلّم الفقه الشافعي بطريقة حديثة ومرحة شبيهة بـ Duolingo. ابدأ بدراسة متن <b>"سفينة النجاة"</b> في باب الطهارة،
+          تعلّم الفقه الشافعي بطريقة حديثة ومرحة شبيهة بـ Duolingo. ابدأ بدراسة متن <b>&quot;سفينة النجاة&quot;</b> في باب الطهارة،
           وتقدم في شجرة التعلم من خلال تحديات فقهية ذكية، واعتمد على نظام مراجعة متباعدة يثبت معلوماتك دون نسيان.
         </p>
 
@@ -56,4 +56,3 @@ export default function Home() {
     </div>
   );
 }
-

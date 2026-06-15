@@ -11,6 +11,8 @@ const clientSchema = z.object({
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is required"),
 });
 
+type ServerEnv = z.infer<typeof serverSchema>;
+
 const isServer = typeof window === "undefined";
 
 const serverEnv = isServer
@@ -20,7 +22,7 @@ const serverEnv = isServer
       UPLOADTHING_SECRET: process.env.UPLOADTHING_SECRET,
       UPLOADTHING_APP_ID: process.env.UPLOADTHING_APP_ID,
     })
-  : { success: true, data: {} as any, error: null };
+  : { success: true as const, data: {} as Record<string, never>, error: undefined };
 
 const clientEnv = clientSchema.safeParse({
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
@@ -38,6 +40,6 @@ if (isServer && !serverEnv.success) {
 
 export const env = {
   ...clientEnv.data,
-  ...(isServer ? serverEnv.data : {}),
-} as typeof clientEnv.data & typeof serverEnv.data;
+  ...(isServer ? (serverEnv.data as ServerEnv) : {}),
+} as typeof clientEnv.data & ServerEnv;
 export default env;

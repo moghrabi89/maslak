@@ -8,7 +8,7 @@ import {
   contentReviews,
   users 
 } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { requireReviewerOrAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 

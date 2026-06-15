@@ -8,8 +8,10 @@ import {
   lessons, 
   fiqhReferences, 
   conceptBank, 
-  questionTemplates 
+  questionTemplates,
+  badges
 } from "./schema";
+import { BADGE_CATALOG } from "../data/badges";
 
 async function main() {
   console.log("⏳ Start seeding database...");
@@ -432,6 +434,10 @@ async function main() {
     }
   ];
   await db.insert(questionTemplates).values(templateData);
+
+  // 10. Seed Badges
+  console.log("🌱 Seeding Badges...");
+  await db.insert(badges).values([...BADGE_CATALOG]).onConflictDoNothing();
 
   console.log("✅ Database seeding completed successfully!");
 }

@@ -27,6 +27,15 @@ import {
 import { Card, CardHeader, CardContent, Button, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { getLessonDetailsForStudent, startChallengeSession, submitChallengeResult } from "@/actions/lesson";
 
+type LessonData = NonNullable<Awaited<ReturnType<typeof getLessonDetailsForStudent>>>;
+type ChallengeQuestion = Awaited<ReturnType<typeof startChallengeSession>>["questions"][number];
+type UserAnswer = Parameters<typeof submitChallengeResult>[2][number];
+type ResultsOutcome = Awaited<ReturnType<typeof submitChallengeResult>>;
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export default function LessonPage({ params: paramsPromise }: { params: Promise<{ lessonId: string }> }) {
   const params = use(paramsPromise);
   const lessonId = params.lessonId;
@@ -34,7 +43,7 @@ export default function LessonPage({ params: paramsPromise }: { params: Promise<
   // DB Data States
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lessonData, setLessonData] = useState<any | null>(null);
+  const [lessonData, setLessonData] = useState<LessonData | null>(null);
   
   // Reading Mode settings state
   const [fontSize, setFontSize] = useState<number>(28); // 20px - 44px
@@ -48,33 +57,43 @@ export default function LessonPage({ params: paramsPromise }: { params: Promise<
 
   // Quiz details state
   const [sessionId, setSessionId] = useState<string>("");
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<ChallengeQuestion[]>([]);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState<boolean>(false);
-  const [userAnswers, setUserAnswers] = useState<any[]>([]);
+  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   
   // Submit Outcome state
   const [submittingResult, setSubmittingResult] = useState<boolean>(false);
-  const [resultsOutcome, setResultsOutcome] = useState<any | null>(null);
+  const [resultsOutcome, setResultsOutcome] = useState<ResultsOutcome | null>(null);
 
   // Fetch lesson data on init
   useEffect(() => {
-    loadLesson();
-  }, [lessonId]);
+    let isActive = true;
 
-  const loadLesson = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getLessonDetailsForStudent(lessonId);
-      setLessonData(data);
-    } catch (err: any) {
-      setError(err.message || "حدث خطأ غير متوقع أثناء تحميل الدرس");
-    } finally {
-      setLoading(false);
+    async function loadLesson() {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getLessonDetailsForStudent(lessonId);
+        if (!isActive) return;
+        setLessonData(data);
+      } catch (err: unknown) {
+        if (!isActive) return;
+        setError(getErrorMessage(err, "حدث خطأ غير متوقع أثناء تحميل الدرس"));
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
     }
-  };
+
+    void loadLesson();
+
+    return () => {
+      isActive = false;
+    };
+  }, [lessonId]);
 
   // Start the interactive challenge session
   const handleStartChallenge = async () => {
@@ -88,8 +107,8 @@ export default function LessonPage({ params: paramsPromise }: { params: Promise<
       setIsAnswerSubmitted(false);
       setUserAnswers([]);
       setFlowState("quiz");
-    } catch (err: any) {
-      alert(err.message || "فشل توليد الأسئلة للتحدي");
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "فشل توليد الأسئلة للتحدي"));
     } finally {
       setLoading(false);
     }
@@ -110,7 +129,7 @@ export default function LessonPage({ params: paramsPromise }: { params: Promise<
 
     // Record response
     const answerRecord = {
-      conceptId: lessonData.concept?.id || null,
+      conceptId: lessonData?.concept?.id ?? null,
       questionPrompt: currentQ.questionPrompt,
       userAnswer: selectedOption,
       correctAnswer: currentQ.correctAnswer,
@@ -140,8 +159,8 @@ export default function LessonPage({ params: paramsPromise }: { params: Promise<
       setFlowState("results");
       const outcome = await submitChallengeResult(sessionId, lessonId, userAnswers);
       setResultsOutcome(outcome);
-    } catch (err: any) {
-      alert(err.message || "فشل تسجيل نتائج التحدي");
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, "فشل تسجيل نتائج التحدي"));
     } finally {
       setSubmittingResult(false);
     }
@@ -177,6 +196,15 @@ export default function LessonPage({ params: paramsPromise }: { params: Promise<
             العودة للوحة التحكم
           </Link>
         </Card>
+      </div>
+    );
+  }
+
+  if (!lessonData) {
+    return (
+      <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-10 h-10 text-brand-emerald-500 animate-spin" />
+        <p className="text-slate-400 text-sm">جاري تجهيز بيانات الدرس...</p>
       </div>
     );
   }

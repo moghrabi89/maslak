@@ -2,23 +2,27 @@ import { requireAuth } from "@/lib/auth";
 import { db } from "@/db";
 import { lessons, skills, units, userProgress, users, challengeSessions, reviewQueue, conceptBank } from "@/db/schema";
 import { Card, CardHeader, CardContent } from "@heroui/react";
-import { eq, and, asc, desc } from "drizzle-orm";
+import { eq, and, asc, desc, lte } from "drizzle-orm";
 import Link from "next/link";
 import { 
   Lock, 
   CheckCircle2, 
   PlayCircle, 
   Sparkles, 
-  BookOpen, 
   AlertCircle, 
-  User, 
-  Flame, 
   Trophy, 
   RotateCcw, 
   Compass, 
   ChevronLeft,
   GraduationCap
 } from "lucide-react";
+
+type LeaderboardUser = {
+  id: string;
+  name: string;
+  xp: number;
+  avatarUrl: string | null;
+};
 
 export default async function DashboardPage() {
   const user = await requireAuth();
@@ -61,17 +65,17 @@ export default async function DashboardPage() {
   const queueItems = await db
     .select()
     .from(reviewQueue)
-    .where(eq(reviewQueue.userId, user.id));
+    .where(and(eq(reviewQueue.userId, user.id), lte(reviewQueue.nextReviewAt, new Date())));
 
   // Map concepts in queue to their corresponding lessons
-  const conceptToLessonMap = new Map();
+  const conceptToLessonMap = new Map<string, string>();
   // Fetch concepts to link conceptId -> lessonId
   const dbConcepts = await db.select().from(conceptBank);
   dbConcepts.forEach(c => {
     conceptToLessonMap.set(c.id, c.lessonId);
   });
 
-  const lessonsNeedingReview = new Set();
+  const lessonsNeedingReview = new Set<string>();
   queueItems.forEach(item => {
     const lessonId = conceptToLessonMap.get(item.conceptId);
     if (lessonId) {
@@ -103,8 +107,13 @@ export default async function DashboardPage() {
   const dbUsers = await db.select().from(users).orderBy(desc(users.xp)).limit(3);
   
   // Ensure we have at least 3 users on the leaderboard. If not, append legendary mock Shafi'i students
-  const leaderboard = [...dbUsers];
-  const mockStudents = [
+  const leaderboard: LeaderboardUser[] = dbUsers.map((dbUser) => ({
+    id: dbUser.id,
+    name: dbUser.name,
+    xp: dbUser.xp,
+    avatarUrl: dbUser.avatarUrl,
+  }));
+  const mockStudents: LeaderboardUser[] = [
     { id: "mock_1", name: "إمام الحرمين الجويني", xp: 1820, avatarUrl: null },
     { id: "mock_2", name: "أبو إسحاق الشيرازي", xp: 1450, avatarUrl: null },
     { id: "mock_3", name: "طالب الفقه المبتدئ", xp: 120, avatarUrl: null }
@@ -112,7 +121,7 @@ export default async function DashboardPage() {
   
   while (leaderboard.length < 3) {
     const mock = mockStudents[leaderboard.length];
-    leaderboard.push(mock as any);
+    leaderboard.push(mock);
   }
 
   // Sort again in case of mock overlaps
@@ -316,7 +325,7 @@ export default async function DashboardPage() {
             <div className="bg-brand-gold-500/5 border border-brand-gold-500/20 rounded-xl p-3 flex items-start gap-2 text-[11px] text-brand-gold-300">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
-                تنبيه: الدروس الموسومة بـ <b>"مسودة مراجع"</b> تظهر لك بصفتك مشرفاً/محققاً لتسهيل تجربتها واعتمادها.
+                تنبيه: الدروس الموسومة بـ <b>&quot;مسودة مراجع&quot;</b> تظهر لك بصفتك الإشرافية لتسهيل تجربتها واعتمادها.
               </span>
             </div>
           )}

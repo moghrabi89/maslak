@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx tests/generator.test.ts && tsx tests/spaced-review.test.ts && tsx tests/gamification.test.ts",
     "db:seed": "npx tsx db/seed.ts"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "sqids": "^0.3.0",
     "uploadthing": "^7.7.4",
     "zod": "^4.4.3"
   },

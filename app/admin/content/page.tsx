@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { 
   Card, 
-  CardHeader, 
   CardContent, 
   Button, 
   Modal, 
@@ -20,7 +19,6 @@ import {
   FolderPlus, 
   Edit3, 
   Archive, 
-  Check, 
   ArrowLeft,
   ChevronRight,
   Loader2,
@@ -38,7 +36,6 @@ import {
   updateBook,
   archiveBook,
   createUnit,
-  updateUnit,
   archiveUnit,
   createSkill,
   archiveSkill,
@@ -47,25 +44,43 @@ import {
   submitForReview
 } from "@/actions/content";
 
+type LevelsWithBooks = Awaited<ReturnType<typeof getLevelsWithBooks>>;
+type LevelView = LevelsWithBooks[number];
+type BookView = LevelView["books"][number];
+type BookDetails = NonNullable<Awaited<ReturnType<typeof getBookDetails>>>;
+type UnitView = BookDetails["units"][number];
+type UnitDetails = NonNullable<Awaited<ReturnType<typeof getUnitDetails>>>;
+type SkillView = UnitDetails["skills"][number];
+type SkillDetails = NonNullable<Awaited<ReturnType<typeof getSkillDetails>>>;
+type LessonView = SkillDetails["lessons"][number];
+type LessonFullData = NonNullable<Awaited<ReturnType<typeof getLessonFullData>>>;
+type ConceptPreview = NonNullable<LessonFullData["concept"]>;
+type ConceptListKey = "pillars" | "conditions" | "invalidators" | "rulings" | "commonMistakes";
+
+interface ConceptItem {
+  title: string;
+  description: string;
+}
+
+type ConceptJsonData = Partial<Record<ConceptListKey, ConceptItem[]>>;
+
 export default function AdminContentPage() {
   // Navigation states
-  const [levels, setLevels] = useState<any[]>([]);
+  const [levels, setLevels] = useState<LevelsWithBooks>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedBook, setSelectedBook] = useState<any | null>(null);
-  const [selectedUnit, setSelectedUnit] = useState<any | null>(null);
-  const [selectedSkill, setSelectedSkill] = useState<any | null>(null);
-  const [selectedLesson, setSelectedLesson] = useState<any | null>(null);
+  const [selectedBook, setSelectedBook] = useState<BookView | BookDetails | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<UnitView | UnitDetails | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<SkillView | SkillDetails | null>(null);
   
   // Loading sub-items states
   const [loadingBook, setLoadingBook] = useState<boolean>(false);
   const [loadingUnit, setLoadingUnit] = useState<boolean>(false);
   const [loadingSkill, setLoadingSkill] = useState<boolean>(false);
-  const [loadingLesson, setLoadingLesson] = useState<boolean>(false);
   
   // Lists for display
-  const [unitsList, setUnitsList] = useState<any[]>([]);
-  const [skillsList, setSkillsList] = useState<any[]>([]);
-  const [lessonsList, setLessonsList] = useState<any[]>([]);
+  const [unitsList, setUnitsList] = useState<UnitView[]>([]);
+  const [skillsList, setSkillsList] = useState<SkillView[]>([]);
+  const [lessonsList, setLessonsList] = useState<LessonView[]>([]);
   
   // Modals state
   const [isBookModalOpen, setIsBookModalOpen] = useState<boolean>(false);
@@ -74,8 +89,7 @@ export default function AdminContentPage() {
   const [isLessonModalOpen, setIsLessonModalOpen] = useState<boolean>(false);
   
   // Editing contexts
-  const [editingBook, setEditingBook] = useState<any | null>(null);
-  const [editingUnit, setEditingUnit] = useState<any | null>(null);
+  const [editingBook, setEditingBook] = useState<BookView | null>(null);
   
   // Form values - Book
   const [bookId, setBookId] = useState("");
@@ -118,20 +132,15 @@ export default function AdminContentPage() {
   const [conNotes, setConNotes] = useState("");
   
   // Structured arrays for Concept JSON data
-  const [pillars, setPillars] = useState<any[]>([]);
-  const [conditions, setConditions] = useState<any[]>([]);
-  const [invalidators, setInvalidators] = useState<any[]>([]);
-  const [rulings, setRulings] = useState<any[]>([]);
-  const [commonMistakes, setCommonMistakes] = useState<any[]>([]);
+  const [pillars, setPillars] = useState<ConceptItem[]>([]);
+  const [conditions, setConditions] = useState<ConceptItem[]>([]);
+  const [invalidators, setInvalidators] = useState<ConceptItem[]>([]);
+  const [rulings, setRulings] = useState<ConceptItem[]>([]);
+  const [commonMistakes, setCommonMistakes] = useState<ConceptItem[]>([]);
 
   // Array edit item inputs
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
-
-  // Load levels on init
-  useEffect(() => {
-    loadLevels();
-  }, []);
 
   const loadLevels = async () => {
     setLoading(true);
@@ -140,12 +149,30 @@ export default function AdminContentPage() {
     setLoading(false);
   };
 
+  // Load levels on init
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadInitialLevels() {
+      setLoading(true);
+      const data = await getLevelsWithBooks();
+      if (!isActive) return;
+      setLevels(data);
+      setLoading(false);
+    }
+
+    void loadInitialLevels();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   // Selection handlers
-  const handleSelectBook = async (book: any) => {
+  const handleSelectBook = async (book: BookView | BookDetails) => {
     setSelectedBook(book);
     setSelectedUnit(null);
     setSelectedSkill(null);
-    setSelectedLesson(null);
     
     setLoadingBook(true);
     const details = await getBookDetails(book.id);
@@ -155,10 +182,9 @@ export default function AdminContentPage() {
     setLoadingBook(false);
   };
 
-  const handleSelectUnit = async (unit: any) => {
+  const handleSelectUnit = async (unit: UnitView | UnitDetails) => {
     setSelectedUnit(unit);
     setSelectedSkill(null);
-    setSelectedLesson(null);
     
     setLoadingUnit(true);
     const details = await getUnitDetails(unit.id);
@@ -168,9 +194,8 @@ export default function AdminContentPage() {
     setLoadingUnit(false);
   };
 
-  const handleSelectSkill = async (skill: any) => {
+  const handleSelectSkill = async (skill: SkillView | SkillDetails) => {
     setSelectedSkill(skill);
-    setSelectedLesson(null);
     
     setLoadingSkill(true);
     const details = await getSkillDetails(skill.id);
@@ -178,13 +203,6 @@ export default function AdminContentPage() {
       setLessonsList(details.lessons);
     }
     setLoadingSkill(false);
-  };
-
-  const handleSelectLesson = async (lesson: any) => {
-    setLoadingLesson(true);
-    const details = await getLessonFullData(lesson.id);
-    setSelectedLesson(details);
-    setLoadingLesson(false);
   };
 
   // Form setup functions
@@ -195,11 +213,11 @@ export default function AdminContentPage() {
     setBookTitle("");
     setBookAuthor("");
     setBookDescription("");
-    setBookOrder(levels.find(l => l.id === lvlId)?.books.length + 1 || 1);
+    setBookOrder((levels.find(l => l.id === lvlId)?.books.length ?? 0) + 1);
     setIsBookModalOpen(true);
   };
 
-  const openEditBookModal = (book: any) => {
+  const openEditBookModal = (book: BookView) => {
     setEditingBook(book);
     setBookLevelId(book.levelId);
     setBookId(book.id);
@@ -211,7 +229,6 @@ export default function AdminContentPage() {
   };
 
   const openNewUnitModal = () => {
-    setEditingUnit(null);
     setUnitId("");
     setUnitTitle("");
     setUnitDescription("");
@@ -226,8 +243,7 @@ export default function AdminContentPage() {
     setIsSkillModalOpen(true);
   };
 
-  const openLessonModalForEdit = async (lesson: any) => {
-    setLoadingLesson(true);
+  const openLessonModalForEdit = async (lesson: LessonView) => {
     const details = await getLessonFullData(lesson.id);
     if (details) {
       setLessId(details.lesson.id);
@@ -254,11 +270,11 @@ export default function AdminContentPage() {
       if (details.concept) {
         setConName(details.concept.conceptName);
         setConCategory(details.concept.category);
-        setConRulingLevel(details.concept.rulingLevel as any);
-        setConPosition(details.concept.madhhabPosition as any);
+        setConRulingLevel(details.concept.rulingLevel);
+        setConPosition(details.concept.madhhabPosition);
         setConNotes(details.concept.notesForAdvancedStudents || "");
         
-        const cData = details.concept.data as any;
+        const cData = details.concept.data as ConceptJsonData;
         setPillars(cData?.pillars || []);
         setConditions(cData?.conditions || []);
         setInvalidators(cData?.invalidators || []);
@@ -277,7 +293,6 @@ export default function AdminContentPage() {
         setCommonMistakes([]);
       }
     }
-    setLoadingLesson(false);
     setIsLessonModalOpen(true);
   };
 
@@ -520,7 +535,7 @@ export default function AdminContentPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {lvl.books.length > 0 ? (
-                  lvl.books.map((book: any) => (
+                  lvl.books.map((book) => (
                     <Card 
                       key={book.id} 
                       className="glass-panel border-slate-800/80 text-slate-100 hover:border-brand-emerald-500/20 cursor-pointer transition-all hover:scale-[1.01]"
@@ -1135,7 +1150,7 @@ export default function AdminContentPage() {
                   <label className="text-slate-400 font-bold">مستوى الفروع:</label>
                   <select 
                     value={conRulingLevel} 
-                    onChange={(e: any) => setConRulingLevel(e.target.value)} 
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setConRulingLevel(e.target.value as typeof conRulingLevel)} 
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none h-[34px]"
                   >
                     <option value="beginner">تمهيدي (Beginner)</option>
@@ -1147,7 +1162,7 @@ export default function AdminContentPage() {
                   <label className="text-slate-400 font-bold">معتمد المذهب:</label>
                   <select 
                     value={conPosition} 
-                    onChange={(e: any) => setConPosition(e.target.value)} 
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => setConPosition(e.target.value as typeof conPosition)} 
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 outline-none h-[34px]"
                   >
                     <option value="mutamad">المعتمد (mutamad)</option>
@@ -1282,12 +1297,12 @@ export default function AdminContentPage() {
 
 // Sub-component to load concept status dynamically without full page reload
 function ConceptMiniPreview({ lessonId }: { lessonId: string }) {
-  const [data, setData] = useState<any | null>(null);
+  const [data, setData] = useState<ConceptPreview | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getLessonFullData(lessonId).then(res => {
-      setData(res?.concept);
+      setData(res?.concept ?? null);
       setLoading(false);
     });
   }, [lessonId]);

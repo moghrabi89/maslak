@@ -9,7 +9,8 @@ import {
   Gem, 
   RefreshCw, 
   User, 
-  ShieldCheck, 
+  ShieldCheck,
+  BarChart3,
   LogOut 
 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
@@ -66,6 +67,11 @@ export function Sidebar({ userRole }: SidebarProps) {
       name: "مراجعة واعتماد",
       href: "/admin/review",
       icon: ShieldCheck,
+    });
+    adminItems.push({
+      name: "تحليلات تعليمية",
+      href: "/admin/analytics",
+      icon: BarChart3,
     });
   }
 

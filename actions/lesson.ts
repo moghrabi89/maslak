@@ -15,7 +15,14 @@ import {
 import { eq, and, asc, sql } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { generateQuestion } from "@/lib/generator";
+import {
+  generateQuestion,
+  type Concept,
+  type ConceptData,
+  type GeneratedQuestion,
+  type QuestionTemplate,
+} from "@/lib/generator";
+import { checkAndAwardBadges } from "@/lib/gamification";
 
 // ==========================================
 // 1. Get Lesson details & Progression lock check
@@ -122,14 +129,14 @@ export async function startChallengeSession(lessonId: string) {
     .where(eq(conceptBank.status, "published"));
 
   // Build a 5-question test by looping templates
-  const questions = [];
+  const questions: GeneratedQuestion[] = [];
   const generatorConcept = {
     id: concept.id,
     conceptName: concept.conceptName,
     category: concept.category,
     notesForAdvancedStudents: concept.notesForAdvancedStudents,
-    data: concept.data as any
-  };
+    data: concept.data as ConceptData,
+  } satisfies Concept;
 
   for (let i = 0; i < 5; i++) {
     // Pick template: cycle through templates or pick random
@@ -139,13 +146,21 @@ export async function startChallengeSession(lessonId: string) {
     // Format template
     const formattedTemplate = {
       id: template.id,
-      type: template.type as any,
-      difficulty: template.difficulty as any,
+      type: template.type,
+      difficulty: template.difficulty,
       templateText: template.templateText,
       explanationTemplate: template.explanationTemplate
-    };
+    } satisfies QuestionTemplate;
 
-    const q = generateQuestion(generatorConcept, formattedTemplate, allConcepts as any);
+    const conceptsForDistractors = allConcepts.map((item) => ({
+      id: item.id,
+      conceptName: item.conceptName,
+      category: item.category,
+      notesForAdvancedStudents: item.notesForAdvancedStudents,
+      data: item.data as ConceptData,
+    })) satisfies Concept[];
+
+    const q = generateQuestion(generatorConcept, formattedTemplate, conceptsForDistractors);
     questions.push(q);
   }
 
@@ -163,7 +178,7 @@ export async function submitChallengeResult(
   sessionId: string,
   lessonId: string,
   answers: Array<{
-    conceptId: string;
+    conceptId: string | null;
     questionPrompt: string;
     userAnswer: string;
     correctAnswer: string;
@@ -247,7 +262,9 @@ export async function submitChallengeResult(
     .where(eq(users.id, user.id));
 
   // Spaced Repetition Queue: Loop incorrect answers and schedule concepts
-  const wrongAnswers = answers.filter((a) => !a.isCorrect && a.conceptId);
+  const wrongAnswers = answers.filter(
+    (a): a is (typeof answers)[number] & { conceptId: string } => !a.isCorrect && a.conceptId !== null
+  );
   for (const wrong of wrongAnswers) {
     const nextReview = new Date(Date.now() + 24 * 60 * 60 * 1000); // after 24 hours
     
@@ -272,13 +289,18 @@ export async function submitChallengeResult(
       });
   }
 
+  const awardedBadges = await checkAndAwardBadges(user.id);
+
   revalidatePath("/dashboard");
   revalidatePath(`/lesson/${lessonId}`);
+  revalidatePath("/profile");
+  revalidatePath("/shop");
   return {
     success: true,
     scorePercentage,
     isPassed,
     xpGained: xpReward,
-    gemsGained: gemsReward
+    gemsGained: gemsReward,
+    awardedBadges
   };
 }

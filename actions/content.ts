@@ -8,12 +8,25 @@ import {
   skills, 
   lessons, 
   fiqhReferences, 
-  conceptBank, 
-  questionTemplates 
+  conceptBank
 } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
-import { requireAdmin, requireReviewerOrAdmin } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+
+interface ConceptItem {
+  title: string;
+  description: string;
+}
+
+interface ConceptJsonData {
+  name: string;
+  pillars?: ConceptItem[];
+  conditions?: ConceptItem[];
+  invalidators?: ConceptItem[];
+  rulings?: ConceptItem[];
+  commonMistakes?: ConceptItem[];
+}
 
 // ==========================================
 // 1. Read Operations
@@ -254,7 +267,7 @@ export async function saveFullLessonData(
     rulingLevel: "beginner" | "standard" | "advanced";
     madhhabPosition: "mutamad" | "alternative_view" | "disputed";
     notesForAdvancedStudents: string;
-    data: any;
+    data: ConceptJsonData;
   } | null
 ) {
   const admin = await requireAdmin();
@@ -307,7 +320,7 @@ export async function saveFullLessonData(
   }
 
   // 3. Concept Bank Handling
-  let conceptId = `${lessonId}_concept`;
+  const conceptId = `${lessonId}_concept`;
   if (conceptData) {
     const [existingConcept] = await db.select().from(conceptBank).where(eq(conceptBank.id, conceptId));
     if (existingConcept) {
