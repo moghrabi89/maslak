@@ -1,0 +1,1 @@
+CREATE INDEX "answer_session_idx" ON "challenge_answers" USING btree ("session_id");

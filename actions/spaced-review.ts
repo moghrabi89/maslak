@@ -11,6 +11,7 @@ import env from "@/lib/env";
 import { calculateReviewOutcome } from "@/lib/spaced-review";
 import { generateQuestion, type Concept, type ConceptData, type QuestionTemplate } from "@/lib/generator";
 import { checkAndAwardBadges } from "@/lib/gamification";
+import { calculateNewStreak } from "@/lib/streak";
 import type { ActiveReviewQuestion, ReviewAnswerResult, ReviewCenterData } from "@/types/spaced-review";
 
 const TOKEN_TTL_MS = 10 * 60 * 1000;
@@ -276,13 +277,25 @@ export async function submitReviewAnswer(input: unknown): Promise<ReviewAnswerRe
     })
     .where(and(eq(reviewQueue.userId, user.id), eq(reviewQueue.conceptId, payload.conceptId)));
 
+  // Fetch user to compute streak
+  const [dbUser] = await db
+    .select({ streak: users.streak, lastActive: users.lastActive })
+    .from(users)
+    .where(eq(users.id, user.id));
+
+  const now = new Date();
+  const newStreak = dbUser
+    ? calculateNewStreak(dbUser.lastActive, dbUser.streak, now)
+    : 1;
+
   await db
     .update(users)
     .set({
       xp: sql`${users.xp} + ${outcome.xpReward}`,
       gems: sql`${users.gems} + ${outcome.gemsReward}`,
-      lastActive: new Date(),
-      updatedAt: new Date(),
+      streak: newStreak,
+      lastActive: now,
+      updatedAt: now,
     })
     .where(eq(users.id, user.id));
 

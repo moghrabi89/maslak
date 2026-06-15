@@ -11,6 +11,13 @@ export interface ConceptItem {
   description: string;
 }
 
+export interface ApplyScenario {
+  scen: string;
+  ans: string;
+  res: string;
+  distractors?: string[];
+}
+
 export interface ConceptData {
   name: string;
   pillars?: ConceptItem[];
@@ -18,6 +25,7 @@ export interface ConceptData {
   invalidators?: ConceptItem[];
   rulings?: ConceptItem[];
   commonMistakes?: ConceptItem[];
+  applyScenarios?: ApplyScenario[];
 }
 
 export interface Concept {
@@ -43,6 +51,7 @@ export interface GeneratedQuestion {
   explanation: string;
   difficulty: "easy" | "medium" | "hard";
   type: string;
+  token?: string;
 }
 
 /**
@@ -189,174 +198,20 @@ export function generateQuestion(
         let scenario = "";
         let reason = "";
 
-        if (concept.id === "concept_wudu_pillars" || concept.conceptName.includes("فروض الوضوء")) {
-          const cases = [
-            {
-              scen: "غسل وجهه كاملاً بنية الوضوء، ثم أتم غسل اليدين والمرفقين والمسح والغسل دون ترتيب",
-              ans: "يبطل وضوؤه لعدم الترتيب",
-              res: "الترتيب ركن من فروض الوضوء الستة، والبدء بغير الوجه يبطل ما قبله ويوجب الترتيب المنهجي."
-            },
-            {
-              scen: "توضأ ونوى عند غسل كفيه (قبل الوجه) ولم يستحضر النية عند أول غسل جزء من الوجه",
-              ans: "لا يصح غسل الوجه ويجب إعادته بالنية",
-              res: "وقت النية في الوضوء تجب أن تكون مقترنة بغسل أول جزء من الوجه."
-            },
-            {
-              scen: "مسح على شعرة واحدة خارجة عن حد الرأس من الخلف ولم يمسح بشرة رأسه",
-              ans: "لا يصح المسح ولا يصح الوضوء",
-              res: "المسح يجب أن يقع على شيء في حد الرأس (بشرة أو شعراً لا يخرج بالمد عن حد الرأس)."
-            }
-          ];
-          const selected = cases[Math.floor(Math.random() * cases.length)];
+        if (data.applyScenarios && data.applyScenarios.length > 0) {
+          const selected = data.applyScenarios[Math.floor(Math.random() * data.applyScenarios.length)];
           scenario = selected.scen;
           correctAnswer = selected.ans;
           reason = selected.res;
-          
-          distractors = [
-            "وضوؤه صحيح تماماً ولا كراهة فيه",
-            "وضوؤه صحيح مع الكراهة لمخالفة السنن المأثورة",
-            "يصح الوضوء وتجب عليه إعادة الصلاة فقط احتياطاً"
-          ];
-        } else if (concept.id === "concept_wudu_invals" || concept.conceptName.includes("نواقض الوضوء")) {
-          const cases = [
-            {
-              scen: "نام وهو جالس ومتمكن مقعده تماماً من الأرض المستوية",
-              ans: "وضوؤه صحيح ولا ينتقض",
-              res: "زوال العقل بالنوم ينقض الوضوء إلا نوم القاعد الممكن مقعده من الأرض."
-            },
-            {
-              scen: "لمس بشرة ابنتها الصغيرة (عمرها سنتان) بلا حائل",
-              ans: "وضوؤه صحيح ولا ينتقض",
-              res: "التقاء البشرتين ينقض فقط إذا كان اللمس لامرأة أجنبية بلغت حد الشهوة (كبيرة)."
-            },
-            {
-              scen: "لمس ظفر زوجته أو شعرها مباشرة بلا حائل",
-              ans: "وضوؤه صحيح ولا ينتقض",
-              res: "لمس الشعر أو الظفر أو السن لا ينقض الوضوء عند الشافعية لأنه ليس من البشرة."
-            },
-            {
-              scen: "مس فرج طفل صغير ببطن راحته مباشرة بلا حائل",
-              ans: "يبطل وضوؤه بالمس",
-              res: "مس قبل الآدمي ينقض الوضوء سواء كان صغيراً أو كبيراً، حياً أو ميتاً، وببطن الكف."
-            }
-          ];
-          const selected = cases[Math.floor(Math.random() * cases.length)];
-          scenario = selected.scen;
-          correctAnswer = selected.ans;
-          reason = selected.res;
-          
-          distractors = [
-            "وضوؤه باطل بكل الأحوال وتجب إعادته فوراً",
-            "ينتقض وضوء اللامس والملموس معاً",
-            "يكره ذلك ويستحب الوضوء خروجاً من الخلاف"
-          ];
-        } else if (concept.id === "concept_istinja" || concept.conceptName.includes("الاستنجاء")) {
-          const cases = [
-            {
-              scen: "استنجى بحجر واحد له ثلاثة أحرف حتى أنقى المحل تماماً",
-              ans: "يصح استنجاؤه ويجزئه",
-              res: "المجزئ هو ثلاثة أحجار، أو حجر واحد ذو ثلاثة أحرف/أوجه يمسح بكل حرف منها مسحة كاملة."
-            },
-            {
-              scen: "استنجى بحجر طاهر ثم بالماء بعد أن جف الغائط تماماً على الصفحة",
-              ans: "لا يجزئ الحجر ويجب الاستنجاء بالماء حصراً",
-              res: "من شروط الاستنجاء بالحجر ألا يجف الخارج، فإذا جف تعين الماء لإزالته."
-            }
-          ];
-          const selected = cases[Math.floor(Math.random() * cases.length)];
-          scenario = selected.scen;
-          correctAnswer = selected.ans;
-          reason = selected.res;
-
-          distractors = [
-            "يجوز الحجر وتكره الصلاة به",
-            "لا يجزئ الحجر ولا الماء ويجب التيمم",
-            "يصح وضوؤه وتجب إراقة الحجر"
-          ];
-        } else if (concept.id === "concept_puberty" || concept.conceptName.includes("البلوغ")) {
-          const cases = [
-            {
-              scen: "ولد أتم أربعة عشر سنة قمرية من عمره ولم يحتلم قط، هل يحكم ببلوغه بالسن؟",
-              ans: "لا يعتبر بالغاً بالسن حتى يتم خمس عشرة سنة",
-              res: "علامة البلوغ بالسن هي تمام خمس عشرة سنة قمرية كاملة للذكر والأنثى."
-            },
-            {
-              scen: "رأت فتاة دماً لأول مرة وهي في سن تسع سنين قمرية، ما حكم هذا الدم؟",
-              ans: "يعتبر دم حيض وتصير به بالغة شرعاً",
-              res: "أقل سن للحيض هو تمام تسع سنين قمرية، والحيض علامة من علامات البلوغ."
-            },
-            {
-              scen: "ادعى طفل يبلغ من العمر ثماني سنين قمرية أنه قد احتلم، هل يحكم ببلوغه؟",
-              ans: "لا يحكم ببلوغه لكونه دون تسع سنين قمرية",
-              res: "شرط الاحتلام ليكون علامة بلوغ هو أن يقع بعد تمام تسع سنين قمرية."
-            }
-          ];
-          const selected = cases[Math.floor(Math.random() * cases.length)];
-          scenario = selected.scen;
-          correctAnswer = selected.ans;
-          reason = selected.res;
-
-          distractors = [
-            "يعتبر بالغاً بالتكليف فوراً لمجرد دعواه",
-            "يجب عليه الصيام فوراً ولا تجب عليه الصلاة",
-            "يصح بلوغه بالسن الشمسي (الميلادي) احتياطاً"
-          ];
-        } else if (concept.id === "concept_wudu_conds" || concept.conceptName.includes("شروط الوضوء")) {
-          const cases = [
-            {
-              scen: "توضأ شخص وعلى أظافره طلاء أظافر عازل أو طبقة كثيفة من دهان زيتي تمنع وصول الماء للبشرة",
-              ans: "يبطل وضوؤه لوجود حائل يمنع وصول الماء للبشرة",
-              res: "من شروط صحة الوضوء عدم وجود حائل يمنع وصول الماء إلى العضو المغسول."
-            },
-            {
-              scen: "شخص مصاب بسلس البول (دائم الحدث) توضأ لصلاة الظهر قبل دخول الوقت (قبل الأذان)",
-              ans: "يبطل وضوؤه ويجب إعادته بعد دخول الوقت",
-              res: "دخول وقت الصلاة شرط لصحة وضوء دائم الحدث؛ لأن طهارته طهارة ضرورة فلا تتقدم عليها."
-            },
-            {
-              scen: "توضأ عامي وهو يعتقد أن غسل الوجه (الذي هو ركن) سنة من سنن الوضوء",
-              ans: "يبطل وضوؤه لاعتقاده الفرض سنة",
-              res: "من شروط صحة الوضوء التمييز والعلم بفرضيته وألا يعتقد فرضاً من فروضه سنة."
-            }
-          ];
-          const selected = cases[Math.floor(Math.random() * cases.length)];
-          scenario = selected.scen;
-          correctAnswer = selected.ans;
-          reason = selected.res;
-
-          distractors = [
-            "يصح وضوؤه وتكره صلاته لمخالفة الأفضل",
-            "يصح وضوؤه ويستحب له إعادة غسل العضو المغسول فقط",
-            "يصح وضوؤه للجاهل مطلقاً ويعفى عنه"
-          ];
-        } else if (concept.id === "concept_ghusl" || concept.conceptName.includes("الغسل")) {
-          const cases = [
-            {
-              scen: "استيقظ رجل من نومه ووجد أثر بلل (مني) على ثوبه ولكنه لا يتذكر احتلاماً",
-              ans: "يجب عليه الغسل لتيقنه من خروج المني",
-              res: "خروج المني موجب للغسل باليقين سواء تذكر احتلاماً أم لم يتذكر."
-            },
-            {
-              scen: "اغتسلت امرأة من الجنابة ولم تعمم الماء على بشرة فروة رأسها تحت شعرها الكثيف",
-              ans: "لم يصح غسلها ويجب تعميم كامل البشرة والشعر بالماء",
-              res: "فروض الغسل تعميم الجسد بالماء بشراً وشعراً، ظاهراً وباطناً، خفيفاً كان أو كثيفاً."
-            },
-            {
-              scen: "ولدت امرأة ولادة جافة (بدون رؤية دم النفاس)، هل يجب عليها الغسل؟",
-              ans: "يجب عليها الغسل لمجرد الولادة",
-              res: "الولادة بنفسها موجب من موجبات الغسل في المذهب الشافعي ولو خلت عن الدم."
-            }
-          ];
-          const selected = cases[Math.floor(Math.random() * cases.length)];
-          scenario = selected.scen;
-          correctAnswer = selected.ans;
-          reason = selected.res;
-
-          distractors = [
-            "يصح الغسل وتجزئها الصلاة مع وجوب الوضوء",
-            "يستحب لها الغسل ويكفيها الوضوء لرفع الحدث",
-            "لا يجب عليها شيء حتى ترى دم النفاس"
-          ];
+          if (selected.distractors && selected.distractors.length >= 3) {
+            distractors = shuffleArray(selected.distractors).slice(0, 3);
+          } else {
+            distractors = [
+              "وضوؤه صحيح تماماً ولا كراهة فيه",
+              "يصح ذلك مع الكراهة لمخالفة الاحتياط",
+              "لا يصح وتجب إعادة العبادة احتياطاً"
+            ];
+          }
         } else {
           // Fallback generic scenario
           scenario = `حدثت مسألة تتعلق بأحكام المعتمد في ${conceptName}`;

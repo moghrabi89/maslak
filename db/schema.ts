@@ -209,17 +209,23 @@ export const challengeSessions = pgTable(
 );
 
 // 12. تفاصيل الإجابات الفردية ومحركات تفسير الأسئلة
-export const challengeAnswers = pgTable("challenge_answers", {
-  id: text("id").primaryKey(),
-  sessionId: text("session_id").references(() => challengeSessions.id).notNull(),
-  conceptId: text("concept_id").references(() => conceptBank.id),
-  questionPrompt: text("question_prompt").notNull(),
-  userAnswer: text("user_answer").notNull(),
-  correctAnswer: text("correct_answer").notNull(),
-  isCorrect: boolean("is_correct").notNull(),
-  explanation: text("explanation").notNull(), // التفسير الفقهي المعروض للطالب فور الخطأ أو الصواب
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const challengeAnswers = pgTable(
+  "challenge_answers",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id").references(() => challengeSessions.id).notNull(),
+    conceptId: text("concept_id").references(() => conceptBank.id),
+    questionPrompt: text("question_prompt").notNull(),
+    userAnswer: text("user_answer").notNull(),
+    correctAnswer: text("correct_answer").notNull(),
+    isCorrect: boolean("is_correct").notNull(),
+    explanation: text("explanation").notNull(), // التفسير الفقهي المعروض للطالب فور الخطأ أو الصواب
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    answerSessionIdx: index("answer_session_idx").on(table.sessionId),
+  })
+);
 
 // 13. طابور المراجعة المتباعدة الذكي (Spaced Repetition Queue)
 export const reviewQueue = pgTable(

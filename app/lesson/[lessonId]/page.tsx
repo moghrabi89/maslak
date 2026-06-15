@@ -134,7 +134,8 @@ export default function LessonPage({ params: paramsPromise }: { params: Promise<
       userAnswer: selectedOption,
       correctAnswer: currentQ.correctAnswer,
       isCorrect,
-      explanation: currentQ.explanation
+      explanation: currentQ.explanation,
+      token: currentQ.token
     };
 
     setUserAnswers([...userAnswers, answerRecord]);

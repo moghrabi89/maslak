@@ -22,8 +22,6 @@ export type { BadgeId } from "@/data/badges";
 export type { BadgeMetrics } from "@/lib/gamification-rules";
 
 export async function checkAndAwardBadges(userId: string) {
-  await db.insert(badges).values([...BADGE_CATALOG]).onConflictDoNothing();
-
   const [user] = await db.select().from(users).where(eq(users.id, userId));
   if (!user) return [];
 
@@ -113,3 +111,4 @@ export async function checkAndAwardBadges(userId: string) {
 
   return db.select().from(badges).where(inArray(badges.id, newBadgeIds));
 }
+

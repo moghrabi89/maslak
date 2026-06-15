@@ -1,4 +1,5 @@
-export {};
+import { signChallengeToken, verifyChallengeToken } from "../lib/crypto";
+
 function assert(condition: boolean, message: string) {
   if (!condition) throw new Error(message);
 }
@@ -111,6 +112,74 @@ function runChallengeTests() {
     passed++;
   } catch (error) {
     console.error("❌ Test 6 Failed:", error);
+    failed++;
+  }
+
+  // Test 7: Secure Challenge Token signing & verification
+  try {
+    const data = {
+      conceptId: "concept_1",
+      questionPrompt: "أي مما يلي يعتبر فرضاً؟",
+      correctAnswer: "غسل الوجه",
+      explanation: "غسل الوجه فرض",
+      expiresAt: Date.now() + 10000 // 10 seconds
+    };
+
+    const token = signChallengeToken(data);
+    assert(token.includes("."), "Signed token should contain a dot separator");
+
+    const verified = verifyChallengeToken(token);
+    assert(verified !== null, "Valid token should verify successfully");
+    assert(verified?.correctAnswer === data.correctAnswer, "Verified data should match original data");
+    console.log("✅ Test 7: Secure Challenge Token signs and verifies correctly");
+    passed++;
+  } catch (error) {
+    console.error("❌ Test 7 Failed:", error);
+    failed++;
+  }
+
+  // Test 8: Secure Challenge Token verification fails with tampered data
+  try {
+    const data = {
+      conceptId: "concept_1",
+      questionPrompt: "أي مما يلي يعتبر فرضاً؟",
+      correctAnswer: "غسل الوجه",
+      explanation: "غسل الوجه فرض",
+      expiresAt: Date.now() + 10000
+    };
+
+    const token = signChallengeToken(data);
+    const parts = token.split(".");
+    // Tamper with payload part by changing one character
+    const tamperedPayload = parts[0] + "a";
+    const tamperedToken = `${tamperedPayload}.${parts[1]}`;
+
+    const verified = verifyChallengeToken(tamperedToken);
+    assert(verified === null, "Tampered token verification should fail");
+    console.log("✅ Test 8: Secure Challenge Token fails on tampering");
+    passed++;
+  } catch (error) {
+    console.error("❌ Test 8 Failed:", error);
+    failed++;
+  }
+
+  // Test 9: Secure Challenge Token verification fails when expired
+  try {
+    const data = {
+      conceptId: "concept_1",
+      questionPrompt: "أي مما يلي يعتبر فرضاً؟",
+      correctAnswer: "غسل الوجه",
+      explanation: "غسل الوجه فرض",
+      expiresAt: Date.now() - 5000 // Expired 5 seconds ago
+    };
+
+    const token = signChallengeToken(data);
+    const verified = verifyChallengeToken(token);
+    assert(verified === null, "Expired token verification should fail");
+    console.log("✅ Test 9: Secure Challenge Token fails when expired");
+    passed++;
+  } catch (error) {
+    console.error("❌ Test 9 Failed:", error);
     failed++;
   }
 

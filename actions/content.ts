@@ -13,20 +13,7 @@ import {
 import { eq, and, asc } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-
-interface ConceptItem {
-  title: string;
-  description: string;
-}
-
-interface ConceptJsonData {
-  name: string;
-  pillars?: ConceptItem[];
-  conditions?: ConceptItem[];
-  invalidators?: ConceptItem[];
-  rulings?: ConceptItem[];
-  commonMistakes?: ConceptItem[];
-}
+import { type ConceptItem, type ConceptData as ConceptJsonData } from "@/lib/generator";
 
 // ==========================================
 // 1. Read Operations

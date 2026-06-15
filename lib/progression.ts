@@ -85,12 +85,14 @@ export async function canAccessUnit(userId: string, unitId: string): Promise<Pro
       .from(skills)
       .where(and(eq(skills.unitId, prevUnit.id), eq(skills.status, "published")));
 
+    const prevSkillIds = prevSkills.map((s) => s.id);
     const prevLessonIds: string[] = [];
-    for (const skill of prevSkills) {
+
+    if (prevSkillIds.length > 0) {
       const skillLessons = await db
         .select({ id: lessons.id })
         .from(lessons)
-        .where(and(eq(lessons.skillId, skill.id), eq(lessons.status, "published")));
+        .where(and(inArray(lessons.skillId, prevSkillIds), eq(lessons.status, "published")));
       prevLessonIds.push(...skillLessons.map((l) => l.id));
     }
 

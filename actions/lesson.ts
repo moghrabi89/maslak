@@ -24,6 +24,9 @@ import {
   type QuestionTemplate,
 } from "@/lib/generator";
 import { checkAndAwardBadges } from "@/lib/gamification";
+import crypto from "crypto";
+import { signChallengeToken, verifyChallengeToken } from "@/lib/crypto";
+import { calculateNewStreak } from "@/lib/streak";
 
 // ==========================================
 // 1. Get Lesson details & Progression lock check
@@ -74,7 +77,7 @@ export async function startChallengeSession(lessonId: string) {
   const user = await requireAuth();
 
   // Insert session record
-  const sessionId = `sess_${user.id}_${lessonId}_${Date.now()}`;
+  const sessionId = `sess_${crypto.randomUUID()}`;
   await db.insert(challengeSessions).values({
     id: sessionId,
     userId: user.id,
@@ -142,7 +145,20 @@ export async function startChallengeSession(lessonId: string) {
     })) satisfies Concept[];
 
     const q = generateQuestion(generatorConcept, formattedTemplate, conceptsForDistractors);
-    questions.push(q);
+    
+    // Sign the challenge token
+    const token = signChallengeToken({
+      conceptId: concept.id,
+      questionPrompt: q.questionPrompt,
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation,
+      expiresAt: Date.now() + 30 * 60 * 1000 // 30 minutes
+    });
+
+    questions.push({
+      ...q,
+      token
+    });
   }
 
   return {
@@ -165,6 +181,7 @@ export async function submitChallengeResult(
     correctAnswer: string;
     isCorrect: boolean;
     explanation: string;
+    token?: string;
   }>
 ) {
   const user = await requireAuth();
@@ -179,8 +196,33 @@ export async function submitChallengeResult(
     throw new Error("جلسة التحدي غير موجودة أو غير تابعة لك");
   }
 
-  const correctAnswers = answers.filter((a) => a.isCorrect).length;
-  const scorePercentage = (correctAnswers / answers.length) * 100;
+  // Cryptographically verify each answer on the server side
+  const verifiedAnswers = [];
+  for (const ans of answers) {
+    if (!ans.token) {
+      throw new Error("عذراً، التوكن الخاص بالسؤال مفقود أو غير صالح للتقييم الأمني");
+    }
+    const tokenData = verifyChallengeToken(ans.token);
+    if (!tokenData) {
+      throw new Error("عذراً، انتهت صلاحية جلسة السؤال أو تم التلاعب بها");
+    }
+    if (tokenData.questionPrompt !== ans.questionPrompt) {
+      throw new Error("عذراً، هناك عدم تطابق بين السؤال والتوكن المشفر");
+    }
+
+    const isCorrect = ans.userAnswer === tokenData.correctAnswer;
+    verifiedAnswers.push({
+      conceptId: tokenData.conceptId,
+      questionPrompt: tokenData.questionPrompt,
+      userAnswer: ans.userAnswer,
+      correctAnswer: tokenData.correctAnswer,
+      isCorrect,
+      explanation: tokenData.explanation
+    });
+  }
+
+  const correctAnswers = verifiedAnswers.filter((a) => a.isCorrect).length;
+  const scorePercentage = verifiedAnswers.length > 0 ? (correctAnswers / verifiedAnswers.length) * 100 : 0;
   const isPassed = scorePercentage >= 80;
 
   // Rewards calculation
@@ -188,7 +230,7 @@ export async function submitChallengeResult(
   const gemsReward = isPassed ? 5 : 0;
 
   // Insert answers to database
-  const answerInserts = answers.map((ans, idx) => ({
+  const answerInserts = verifiedAnswers.map((ans, idx) => ({
     id: `ans_${sessionId}_${idx}_${Date.now()}`,
     sessionId,
     conceptId: ans.conceptId || null,
@@ -232,19 +274,32 @@ export async function submitChallengeResult(
     })
     .where(eq(challengeSessions.id, sessionId));
 
-  // Update user XP, gems, and lastActive
+  // Fetch user to compute streak
+  const [dbUser] = await db
+    .select({ streak: users.streak, lastActive: users.lastActive })
+    .from(users)
+    .where(eq(users.id, user.id));
+
+  const now = new Date();
+  const newStreak = dbUser 
+    ? calculateNewStreak(dbUser.lastActive, dbUser.streak, now) 
+    : 1;
+
+  // Update user XP, gems, streak, and lastActive
   await db
     .update(users)
     .set({
       xp: sql`${users.xp} + ${xpReward}`,
       gems: sql`${users.gems} + ${gemsReward}`,
-      lastActive: new Date()
+      streak: newStreak,
+      lastActive: now,
+      updatedAt: now
     })
     .where(eq(users.id, user.id));
 
   // Spaced Repetition Queue: Loop incorrect answers and schedule concepts
-  const wrongAnswers = answers.filter(
-    (a): a is (typeof answers)[number] & { conceptId: string } => !a.isCorrect && a.conceptId !== null
+  const wrongAnswers = verifiedAnswers.filter(
+    (a): a is (typeof verifiedAnswers)[number] & { conceptId: string } => !a.isCorrect && a.conceptId !== null
   );
   for (const wrong of wrongAnswers) {
     const nextReview = new Date(Date.now() + 24 * 60 * 60 * 1000); // after 24 hours
