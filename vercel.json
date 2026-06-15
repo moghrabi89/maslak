@@ -9,6 +9,7 @@
     "CLERK_SECRET_KEY": "@clerk_secret_key",
     "DATABASE_URL": "@database_url",
     "UPLOADTHING_TOKEN": "@uploadthing_token",
-    "UPLOADTHING_SECRET": "@uploadthing_secret"
+    "UPLOADTHING_SECRET": "@uploadthing_secret",
+    "UPLOADTHING_APP_ID": "@uploadthing_app_id"
   }
 }
