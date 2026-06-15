@@ -1,6 +1,6 @@
 import { requireAuth } from "@/lib/auth";
 import { db } from "@/db";
-import { lessons, skills, units, userProgress, users, challengeSessions, reviewQueue, conceptBank } from "@/db/schema";
+import { lessons, skills, units, userProgress, users, challengeSessions, reviewQueue, conceptBank, books } from "@/db/schema";
 import { Card, CardHeader, CardContent } from "@heroui/react";
 import { eq, and, asc, desc, lte } from "drizzle-orm";
 import Link from "next/link";
@@ -28,10 +28,17 @@ type LeaderboardUser = {
   avatarUrl: string | null;
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ bookId?: string }>;
+}) {
   const user = await requireAuth();
+  const params = await searchParams;
+  const bookId = params.bookId || "safina"; // MVP Book
 
-  const bookId = "safina"; // MVP Book
+  const [dbBook] = await db.select().from(books).where(eq(books.id, bookId));
+  const bookTitle = dbBook?.title || "سفينة النجاة";
 
   // Allow admins and reviewers to see drafts on the dashboard for testing
   const showDrafts = user.role === "admin" || user.role === "reviewer";
@@ -160,7 +167,7 @@ export default async function DashboardPage() {
   if (queueItems.length > 0) {
     hoopoeGreeting = `أهلاً بك يا ${user.name}! يرى الهدهد الحكيم أن لديك (${queueItems.length}) مفاهيم فقهية ضعيفة تحتاج لمراجعة فورية لتثبيت حفظك. ابدأ المراجعة الذكية الآن!`;
   } else if (completionPercentage === 100) {
-    hoopoeGreeting = `ما شاء الله! لقد أتممت كامل باب الطهارة من سفينة النجاة بنجاح مبهر. يهنئك الهدهد الحكيم على إتقانك المتميز للمذهب الشافعي!`;
+    hoopoeGreeting = `ما شاء الله! لقد أتممت كامل كتاب (${bookTitle}) بنجاح مبهر. يهنئك الهدهد الحكيم على إتقانك المتميز للمذهب الشافعي!`;
   }
 
   return (
@@ -185,7 +192,7 @@ export default async function DashboardPage() {
                 <Compass className="w-4 h-4 text-brand-emerald-500" /> لوحة الإنجاز الفقهي
               </span>
               <span className="px-2 py-0.5 rounded-full bg-brand-emerald-500/10 text-brand-emerald-400 text-[10px] font-bold">
-                متن سفينة النجاة
+                متن {bookTitle}
               </span>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
@@ -231,7 +238,7 @@ export default async function DashboardPage() {
               {/* Progress bar */}
               <div className="space-y-1.5">
                 <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                  <span>نسبة إتمام باب الطهارة:</span>
+                  <span>نسبة إتمام {bookTitle}:</span>
                   <span className="text-brand-emerald-400">{completionPercentage}%</span>
                 </div>
                 <div className="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-850">
@@ -344,7 +351,7 @@ export default async function DashboardPage() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-3 gap-2">
             <div className="flex items-center gap-2">
               <GraduationCap className="w-6 h-6 text-brand-emerald-400" />
-              <h2 className="text-xl font-extrabold text-slate-200">مسار التعلم التفاعلي (Safina Path) 🌳</h2>
+              <h2 className="text-xl font-extrabold text-slate-200">مسار التعلم التفاعلي ({bookTitle}) 🌳</h2>
             </div>
             <span className="text-[10px] text-slate-400">
               اضغط على الدرس النشط لبدء المذاكرة والتحدي المبرهن.

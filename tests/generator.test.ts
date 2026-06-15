@@ -217,7 +217,7 @@ function runTests() {
 
   // Test 6: Fill-in-the-blank question generation
   try {
-    const q = generateQuestion(mockConcepts[0], mockTemplates[5], mockConcepts);
+    const q = generateQuestion(mockConcepts[0], mockTemplates[7], mockConcepts);
     console.log("✅ Test 6: Fill-in Question Generated Successfully:");
     console.log(`   Prompt: "${q.questionPrompt}"`);
     console.log(`   Correct: "${q.correctAnswer}"`);

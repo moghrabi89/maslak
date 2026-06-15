@@ -5,9 +5,9 @@
 ---
 
 ## 📊 حالة المشروع الحالية
-* **المراحل المكتملة:** 11 من أصل 20 مرحلة.
-* **نسبة الإنجاز الإجمالية:** 55% من خطة العمل الشاملة.
-* **حالة بيئة التطوير:** مستقرة 100% (TypeScript & Turbopack Compiling Succeeded).
+* **المراحل المكتملة:** 19 من أصل 20 مرحلة (مع بقاء المرحلة 18 مكتملة جزئياً).
+* **نسبة الإنجاز الإجمالية:** 95% من خطة العمل الشاملة.
+* **حالة بيئة التطوير:** مستقرة 100% (TypeScript & Tests Passed).
 
 ---
 
@@ -29,12 +29,12 @@
 | **12** | **شاشة الدرس والفتح المنهجي (Progress Lock)** | 🟢 مكتمل (✔️) | [lesson/page.tsx](file:///e:/New%20Project/maslak/app/lesson/[lessonId]/page.tsx) • [actions/lesson.ts](file:///e:/New%20Project/maslak/actions/lesson.ts) |
 | **13** | **جلسات التحديات وحفظ الأجوبة والتفسير** | 🟢 مكتمل (✔️) | [lesson/page.tsx](file:///e:/New%20Project/maslak/app/lesson/[lessonId]/page.tsx) • [actions/lesson.ts](file:///e:/New%20Project/maslak/actions/lesson.ts) |
 | **14** | **لوحة تحكم الطالب العريضة (Multi-column)** | 🟢 مكتمل (✔️) | [dashboard/page.tsx](file:///e:/New%20Project/maslak/app/(dashboard)/dashboard/page.tsx) |
-| **15** | **مركز المراجعة المتباعدة الذكي (Spaced Repetition)** | ⏳ قيد الانتظار | معالجة خوارزمية التكرار وتحديث طابور الطالب لمنع التكرار |
-| **16** | **التلعيّب العلمي ونظام الشارات والألقاب** | ⏳ قيد الانتظار | توزيع النقاط XP وجدول الشارات والألقاب التقديرية |
-| **17** | **لوحة الصدارة والتنافسية المفلترة بالكتب** | ⏳ قيد الانتظار | فرز الطلاب وتصنيف التنافس الفقهي لعدالة المنافسة |
-| **18** | **استكمال أبواب كتاب سفينة النجاة** | ⏳ قيد الانتظار | تغذية ونشر أبواب الصلاة والزكاة والصيام كاملة بعد استقرار الـ MVP |
-| **19** | **التحليلات التعليمية وكشف ثغرات التحصيل** | ⏳ قيد الانتظار | استخراج تقارير إحصائية تكشف مواطن صعوبة المتون لدى الطلاب |
-| **20** | **الاختبار الشامل للكتب والإطلاق التجريبي** | ⏳ قيد الانتظار | إعداد Unit Tests شاملة وتهيئة المنصة للاستخدام العام للجمهور |
+| **15** | **مركز المراجعة المتباعدة الذكي (Spaced Repetition)** | 🟢 مكتمل (✔️) | [spaced-review.ts](file:///e:/New%20Project/maslak/actions/spaced-review.ts) • [ReviewClient.tsx](file:///e:/New%20Project/maslak/app/(dashboard)/review/ReviewClient.tsx) |
+| **16** | **التلعيّب العلمي ونظام الشارات والألقاب** | 🟢 مكتمل (✔️) | [gamification.ts](file:///e:/New%20Project/maslak/lib/gamification.ts) • [shop/page.tsx](file:///e:/New%20Project/maslak/app/(dashboard)/shop/page.tsx) |
+| **17** | **لوحة الصدارة والتنافسية المفلترة بالكتب** | 🟢 مكتمل (✔️) | [leaderboard/page.tsx](file:///e:/New%20Project/maslak/app/(dashboard)/leaderboard/page.tsx) |
+| **18** | **استكمال أبواب كتاب سفينة النجاة** | 🟡 جزئي (⏳) | مضاف باب الصلاة كـ Draft، وينقص تغذية ونشر أبواب الزكاة والصيام |
+| **19** | **التحليلات التعليمية وكشف ثغرات التحصيل** | 🟢 مكتمل (✔️) | [analytics.ts](file:///e:/New%20Project/maslak/actions/analytics.ts) • [analytics/page.tsx](file:///e:/New%20Project/maslak/app/admin/analytics/page.tsx) |
+| **20** | **الاختبار الشامل للكتب والإطلاق التجريبي** | 🟢 مكتمل (✔️) | [tests/](file:///e:/New%20Project/maslak/tests/) (تم تشغيل واجتياز كافة الاختبارات بنجاح) |
 
 ---
 

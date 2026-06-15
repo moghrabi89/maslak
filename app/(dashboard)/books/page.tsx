@@ -1,39 +1,59 @@
 import { Card, CardHeader, CardContent, Button } from "@heroui/react";
 import { BookOpen, Calendar, Lock } from "lucide-react";
+import { db } from "@/db";
+import { books, levels } from "@/db/schema";
+import { eq, asc } from "drizzle-orm";
+import { requireAuth } from "@/lib/auth";
+import Link from "next/link";
 
-export default function BooksPage() {
-  const booksList = [
-    {
-      level: "المستوى التمهيدي",
-      color: "border-brand-emerald-500/30",
-      bg: "bg-brand-emerald-950/20",
-      texts: [
-        { title: "سفينة النجاة", author: "الشيخ سالم بن سمير الحضري", status: "متاح الآن (MVP)", unlocked: true },
-        { title: "الياقوت النفيس", author: "السيد أحمد بن عمر الشاطري", status: "قريباً", unlocked: false },
-        { title: "المقدمة الحضرمية", author: "الشيخ عبد الله بن عبد الرحمن بافضل", status: "قريباً", unlocked: false },
-      ],
-    },
-    {
-      level: "المستوى الأول",
-      color: "border-brand-gold-500/20",
-      bg: "bg-brand-gold-900/5",
-      texts: [
-        { title: "متن أبي شجاع", author: "القاضي أبو شجاع الأصفهاني", status: "مقفل", unlocked: false },
-        { title: "فتح القريب المجيب", author: "ابن قاسم الغزي", status: "مقفل", unlocked: false },
-        { title: "كفاية الأخيار", author: "التقي الحصني", status: "مقفل", unlocked: false },
-      ],
-    },
-    {
-      level: "المستوى المتوسط",
-      color: "border-slate-800/80",
-      bg: "bg-slate-900/10",
-      texts: [
-        { title: "عمدة السالك", author: "ابن النقيب المصري", status: "مقفل", unlocked: false },
-        { title: "منهج الطلاب", author: "شيخ الإسلام زكريا الأنصاري", status: "مقفل", unlocked: false },
-        { title: "فتح المعين", author: "المليباري", status: "مقفل", unlocked: false },
-      ],
-    },
-  ];
+export default async function BooksPage() {
+  const user = await requireAuth();
+
+  // Fetch levels and books dynamically from database
+  const dbLevels = await db.select().from(levels).orderBy(asc(levels.id));
+  const dbBooks = await db.select().from(books).orderBy(asc(books.order));
+
+  // Determine user role to see if drafts should be visible
+  const isStaff = user.role === "admin" || user.role === "reviewer";
+
+  // Group books by level
+  const booksList = dbLevels.map((level) => {
+    const levelBooks = dbBooks.filter(
+      (b) => b.levelId === level.id && (b.status === "published" || isStaff)
+    );
+
+    // Color theme logic based on level ID for beautiful aesthetics
+    let color = "border-slate-800/80";
+    let bg = "bg-slate-900/10";
+    if (level.id === 0) {
+      color = "border-brand-emerald-500/30";
+      bg = "bg-brand-emerald-950/20";
+    } else if (level.id === 1) {
+      color = "border-brand-gold-500/20";
+      bg = "bg-brand-gold-900/5";
+    }
+
+    return {
+      level: level.title,
+      color,
+      bg,
+      texts: levelBooks.map((b) => {
+        const isUnlocked = b.status === "published" || isStaff;
+        const statusText = b.status === "published" 
+          ? "متاح الآن" 
+          : b.status === "draft" 
+          ? "مسودة (مراجعة)" 
+          : "قريباً";
+        return {
+          id: b.id,
+          title: b.title,
+          author: b.author,
+          status: statusText,
+          unlocked: isUnlocked,
+        };
+      }),
+    };
+  }).filter(group => group.texts.length > 0); // Only show levels that have books for this user role
 
   return (
     <div className="p-8 space-y-6 max-w-5xl">
@@ -81,22 +101,21 @@ export default function BooksPage() {
                       </span>
                     </div>
 
-                    <Button
-                      isDisabled={!book.unlocked}
-                      className={`w-full font-bold text-xs py-2 rounded-lg cursor-pointer ${
-                        book.unlocked 
-                          ? "bg-brand-emerald-500 hover:bg-brand-emerald-600 text-slate-950 shadow-md shadow-emerald-500/10" 
-                          : "bg-slate-900/30 border border-slate-800/80 text-slate-500 cursor-not-allowed"
-                      }`}
-                    >
-                      {book.unlocked ? (
-                        "افتح الكتاب للدراسة"
-                      ) : (
-                        <span className="flex items-center justify-center gap-1">
-                          <Lock className="w-3 h-3" /> مقفل حالياً
-                        </span>
-                      )}
-                    </Button>
+                    {book.unlocked ? (
+                      <Link 
+                        href={`/dashboard?bookId=${book.id}`}
+                        className="w-full font-bold text-xs py-2 rounded-lg bg-brand-emerald-500 hover:bg-brand-emerald-600 text-slate-950 shadow-md shadow-emerald-500/10 text-center block"
+                      >
+                        افتح الكتاب للدراسة
+                      </Link>
+                    ) : (
+                      <Button
+                        isDisabled
+                        className="w-full font-bold text-xs py-2 rounded-lg bg-slate-900/30 border border-slate-800/80 text-slate-500 cursor-not-allowed flex items-center justify-center gap-1"
+                      >
+                        <Lock className="w-3 h-3" /> مقفل حالياً
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))}
