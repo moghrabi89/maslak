@@ -99,6 +99,20 @@ const mockTemplates: QuestionTemplate[] = [
     explanationTemplate: "شرح السؤال: {item}."
   },
   {
+    id: "tmpl_synthesis",
+    type: "synthesis",
+    difficulty: "hard",
+    templateText: "أي من الحالات التالية تؤدي إلى بطلان {concept} بالكامل؟",
+    explanationTemplate: "رائع! الحالة التي تبطل {concept} هي: ({item})."
+  },
+  {
+    id: "tmpl_true_false",
+    type: "true_false",
+    difficulty: "easy",
+    templateText: "هل العبارة التالية صحيحة؟ {concept}",
+    explanationTemplate: "شرح السؤال: {item}."
+  },
+  {
     id: "tmpl_fill_in",
     type: "fill_in",
     difficulty: "medium",

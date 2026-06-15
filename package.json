@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx tests/generator.test.ts && tsx tests/spaced-review.test.ts && tsx tests/gamification.test.ts",
+    "test": "tsx tests/generator.test.ts && tsx tests/spaced-review.test.ts && tsx tests/gamification.test.ts && tsx tests/auth.test.ts && tsx tests/challenge.test.ts && tsx tests/progression.test.ts && tsx tests/review-flow.test.ts && tsx tests/admin-content.test.ts",
     "db:seed": "npx tsx db/seed.ts"
   },
   "dependencies": {

@@ -11,3 +11,8 @@
   Reload env: .env
   Reload env: .env
 ✓ Compiled in 200.7s
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env
+✓ Ready in 614ms
