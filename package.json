@@ -1,0 +1,40 @@
+{
+  "name": "next-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:seed": "npx tsx db/seed.ts"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^7.5.2",
+    "@heroui/react": "^3.1.0",
+    "@neondatabase/serverless": "^1.1.0",
+    "@uploadthing/react": "^7.3.3",
+    "drizzle-orm": "^0.45.2",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.18.0",
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "uploadthing": "^7.7.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "prettier": "^3.8.4",
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
