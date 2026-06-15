@@ -3,13 +3,5 @@
   "buildCommand": "npx next build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "env": {
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "@next_public_clerk_publishable_key",
-    "CLERK_SECRET_KEY": "@clerk_secret_key",
-    "DATABASE_URL": "@database_url",
-    "UPLOADTHING_TOKEN": "@uploadthing_token",
-    "UPLOADTHING_SECRET": "@uploadthing_secret",
-    "UPLOADTHING_APP_ID": "@uploadthing_app_id"
-  }
+  "regions": ["iad1"]
 }
