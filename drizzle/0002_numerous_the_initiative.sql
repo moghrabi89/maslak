@@ -1,0 +1,1 @@
+ALTER TABLE "books" ADD COLUMN "type" text DEFAULT 'matn' NOT NULL;

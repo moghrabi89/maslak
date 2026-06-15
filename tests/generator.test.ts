@@ -90,6 +90,20 @@ const mockTemplates: QuestionTemplate[] = [
     difficulty: "hard",
     templateText: "أي من الحالات التالية تؤدي إلى بطلان {concept} بالكامل؟",
     explanationTemplate: "رائع! الحالة التي تبطل {concept} هي: ({item})."
+  },
+  {
+    id: "tmpl_true_false",
+    type: "true_false",
+    difficulty: "easy",
+    templateText: "هل العبارة التالية صحيحة؟ {concept}",
+    explanationTemplate: "شرح السؤال: {item}."
+  },
+  {
+    id: "tmpl_fill_in",
+    type: "fill_in",
+    difficulty: "medium",
+    templateText: "املأ الفراغ في النص التالي المتعلق بـ {concept}",
+    explanationTemplate: "الإجابة الصحيحة: {item}."
   }
 ];
 
@@ -166,6 +180,42 @@ function runTests() {
     passed++;
   } catch (error) {
     console.error("❌ Test 4 Failed:", error);
+    failed++;
+  }
+
+  // Test 5: True/False question generation
+  try {
+    const q = generateQuestion(mockConcepts[0], mockTemplates[4], mockConcepts);
+    console.log("✅ Test 5: True/False Question Generated Successfully:");
+    console.log(`   Prompt: "${q.questionPrompt}"`);
+    console.log(`   Correct: "${q.correctAnswer}"`);
+
+    // Assertions
+    if (q.options.length !== 2) throw new Error("True/False question must have exactly 2 options");
+    if (q.correctAnswer !== "صحيح" && q.correctAnswer !== "خطأ") throw new Error("Correct answer must be one of the true/false values");
+    if (!q.questionPrompt.includes("هل العبارة")) throw new Error("Prompt must contain true/false phrasing");
+    if (!q.explanation) throw new Error("True/False question must have explanation");
+    passed++;
+  } catch (error) {
+    console.error("❌ Test 5 Failed:", error);
+    failed++;
+  }
+
+  // Test 6: Fill-in-the-blank question generation
+  try {
+    const q = generateQuestion(mockConcepts[0], mockTemplates[5], mockConcepts);
+    console.log("✅ Test 6: Fill-in Question Generated Successfully:");
+    console.log(`   Prompt: "${q.questionPrompt}"`);
+    console.log(`   Correct: "${q.correctAnswer}"`);
+
+    // Assertions
+    if (q.options.length !== 4) throw new Error("Fill-in question must have exactly 4 options (correct + 3 distractors)");
+    if (!q.options.includes(q.correctAnswer)) throw new Error("Options must contain the correct answer");
+    if (!q.questionPrompt.includes("______") && !q.questionPrompt.includes("املأ")) throw new Error("Prompt must indicate a fill-in question");
+    if (!q.explanation) throw new Error("Fill-in question must have explanation");
+    passed++;
+  } catch (error) {
+    console.error("❌ Test 6 Failed:", error);
     failed++;
   }
 

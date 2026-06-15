@@ -30,7 +30,7 @@ export interface Concept {
 
 export interface QuestionTemplate {
   id: string;
-  type: "recall" | "distinguish" | "apply" | "synthesis";
+  type: "recall" | "distinguish" | "apply" | "synthesis" | "true_false" | "fill_in";
   difficulty: "easy" | "medium" | "hard";
   templateText: string;
   explanationTemplate: string;
@@ -407,6 +407,80 @@ export function generateQuestion(
         explanation = template.explanationTemplate
           .replace("{item}", correctAnswer)
           .replace("{concept}", conceptName);
+        break;
+      }
+
+      case "true_false": {
+        // Generate a statement about the concept, half the time true, half false
+        const items = [...(data.pillars || []), ...(data.conditions || []), ...(data.invalidators || []), ...(data.rulings || [])];
+        const isTrue = Math.random() > 0.5;
+
+        if (items.length > 0) {
+          const selected = items[Math.floor(Math.random() * items.length)];
+          if (isTrue) {
+            correctAnswer = "صحيح";
+            questionPrompt = `هل العبارة التالية صحيحة؟ "${selected.title}: ${selected.description}"`;
+            explanation = `صحيح. ${selected.description} وهذا من أحكام ${conceptName} في المذهب الشافعي.`;
+          } else {
+            // Pick a wrong description from another concept
+            const wrongItems = sameCategoryConcepts.flatMap(c =>
+              [...(c.data.pillars || []), ...(c.data.conditions || []), ...(c.data.invalidators || []), ...(c.data.rulings || [])]
+            ).filter(w => w.title !== selected.title);
+            const wrongDesc = wrongItems.length > 0
+              ? wrongItems[Math.floor(Math.random() * wrongItems.length)].description
+              : "هذا الحكم مخالف للمعتمد في المذهب";
+            correctAnswer = "خطأ";
+            questionPrompt = `هل العبارة التالية صحيحة؟ "${selected.title}: ${wrongDesc}"`;
+            explanation = `خطأ. الصحيح أن: ${selected.description} وهذا ما اعتمده الشافعية في ${conceptName}.`;
+          }
+        } else {
+          questionPrompt = `هل العبارة التالية صحيحة؟ "${conceptName} من أحكام الطهارة المعتمدة في مذهب الشافعية"`;
+          correctAnswer = "صحيح";
+          explanation = `صحيح. ${conceptName} من المفاهيم الأساسية في باب الطهارة عند الشافعية.`;
+        }
+
+        distractors = correctAnswer === "صحيح" ? ["خطأ"] : ["صحيح"];
+        break;
+      }
+
+      case "fill_in": {
+        // Fill in the blank: remove a key term from a description
+        const fillItems = [...(data.pillars || []), ...(data.conditions || []), ...(data.invalidators || []), ...(data.rulings || [])];
+        if (fillItems.length > 0) {
+          const selected = fillItems[Math.floor(Math.random() * fillItems.length)];
+          const desc = selected.description;
+          const words = desc.split(" ");
+          if (words.length > 3) {
+            const blankIdx = Math.floor(words.length / 2);
+            const blankWord = words[blankIdx];
+            words[blankIdx] = "______";
+            correctAnswer = blankWord;
+            questionPrompt = `املأ الفراغ: "${words.join(" ")}" (المصطلح يتعلق بـ ${conceptName})`;
+          } else {
+            correctAnswer = selected.title;
+            questionPrompt = `املأ الفراغ: "${desc}" (المصطلح الناقص يتعلق بـ ${conceptName})`;
+          }
+          // Distractors are possible alternative terms from the same concept or from same chapter
+          const otherTerms = fillItems
+            .filter(f => f.title !== correctAnswer && f.title !== selected.title)
+            .map(f => f.title);
+          const allTerms = [...new Set([...otherTerms, ...sameCategoryConcepts.flatMap(c =>
+            [...(c.data.pillars || []), ...(c.data.conditions || []), ...(c.data.invalidators || []), ...(c.data.rulings || [])].map(i => i.title)
+          )])].filter(t => t !== correctAnswer);
+
+          distractors = shuffleArray(allTerms).slice(0, 3);
+          if (distractors.length < 3) {
+            distractors.push("النية", "الترتيب", "الموالاة");
+          }
+          distractors = distractors.slice(0, 3);
+
+          explanation = template.explanationTemplate.replace("{item}", correctAnswer).replace("{concept}", conceptName);
+        } else {
+          questionPrompt = `املأ الفراغ: "${conceptName} من _____ الطهارة عند الشافعية"`;
+          correctAnswer = "أحكام";
+          distractors = ["شروط", "سنن", "مبطلات"];
+          explanation = `${conceptName} من أحكام الطهارة المعتمدة في مذهب الشافعية.`;
+        }
         break;
       }
 

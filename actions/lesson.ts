@@ -12,8 +12,9 @@ import {
   reviewQueue,
   questionTemplates
 } from "@/db/schema";
-import { eq, and, asc, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
+import { canAccessLesson } from "@/lib/progression";
 import { revalidatePath } from "next/cache";
 import {
   generateQuestion,
@@ -42,28 +43,8 @@ export async function getLessonDetailsForStudent(lessonId: string) {
     throw new Error("غير مصرح لك بمشاهدة هذا الدرس غير المعتمد");
   }
 
-  // Lock status check:
-  // First, find all lessons in the same skill/unit, ordered by 'order'
-  const siblingLessons = await db
-    .select()
-    .from(lessons)
-    .where(and(eq(lessons.skillId, lesson.skillId), eq(lessons.status, "published")))
-    .orderBy(asc(lessons.order));
-
-  let isLocked = false;
-  // If there's a lesson in the skill with an order less than ours, check if it's completed
-  const currentIdx = siblingLessons.findIndex((l) => l.id === lessonId);
-  if (currentIdx > 0) {
-    const prevLesson = siblingLessons[currentIdx - 1];
-    const [progress] = await db
-      .select()
-      .from(userProgress)
-      .where(and(eq(userProgress.userId, user.id), eq(userProgress.lessonId, prevLesson.id)));
-    
-    if (!progress || !progress.completed) {
-      isLocked = true;
-    }
-  }
+  // Lock status check via progression service
+  const { isLocked } = await canAccessLesson(user.id, lessonId);
 
   // Get associated concept
   const [concept] = await db

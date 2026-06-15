@@ -14,7 +14,11 @@ import {
   RotateCcw, 
   Compass, 
   ChevronLeft,
-  GraduationCap
+  GraduationCap,
+  Gem,
+  Zap,
+  Flame,
+  Layers
 } from "lucide-react";
 
 type LeaderboardUser = {
@@ -195,6 +199,32 @@ export default async function DashboardPage() {
                   <p className="text-[10px] text-slate-400">
                     الرتبة: {user.role === "admin" ? "مدير النظام" : user.role === "reviewer" ? "مراجع شرعي" : "طالب علم"}
                   </p>
+                </div>
+              </div>
+
+              {/* XP, Gems, Streak, Current Level */}
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5 text-center">
+                  <Zap className="w-4 h-4 text-brand-gold-500 mx-auto mb-1" />
+                  <p className="text-lg font-extrabold text-brand-gold-400">{user.xp}</p>
+                  <p className="text-[8px] text-slate-500">XP</p>
+                </div>
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5 text-center">
+                  <Gem className="w-4 h-4 text-sky-400 mx-auto mb-1" />
+                  <p className="text-lg font-extrabold text-sky-400">{user.gems}</p>
+                  <p className="text-[8px] text-slate-500">جواهر</p>
+                </div>
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5 text-center">
+                  <Flame className="w-4 h-4 text-orange-400 mx-auto mb-1" />
+                  <p className="text-lg font-extrabold text-orange-400">{user.streak}</p>
+                  <p className="text-[8px] text-slate-500">أيام</p>
+                </div>
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-2.5 text-center">
+                  <Layers className="w-4 h-4 text-purple-400 mx-auto mb-1" />
+                  <p className="text-lg font-extrabold text-purple-400">
+                    {user.xp >= 1000 ? 2 : user.xp >= 500 ? 1 : 0}
+                  </p>
+                  <p className="text-[8px] text-slate-500">مستوى</p>
                 </div>
               </div>
 

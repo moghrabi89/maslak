@@ -41,6 +41,7 @@ export const books = pgTable(
     title: text("title").notNull(),
     author: text("author").notNull(),
     description: text("description"),
+    type: text("type").$type<"matn" | "commentary" | "reference">().default("matn").notNull(),
     order: integer("order").notNull(),
     status: text("status").$type<"draft" | "reviewed" | "approved" | "published" | "archived">().default("draft").notNull(), // دورة حياة النشر
     createdBy: text("created_by").references(() => users.id),
@@ -282,7 +283,7 @@ export const userBadges = pgTable(
 // 17. قوالب الأسئلة المعتمدة والمراجعة علمياً (Question Templates)
 export const questionTemplates = pgTable("question_templates", {
   id: text("id").primaryKey(),
-  type: text("type").$type<"recall" | "distinguish" | "apply" | "synthesis">().notNull(), // 'recall' | 'distinguish' | 'apply' | 'synthesis'
+  type: text("type").$type<"recall" | "distinguish" | "apply" | "synthesis" | "true_false" | "fill_in">().notNull(),
   difficulty: text("difficulty").$type<"easy" | "medium" | "hard">().notNull(), // 'easy' | 'medium' | 'hard'
   templateText: text("template_text").notNull(), // نص قالب السؤال
   explanationTemplate: text("explanation_template").notNull(), // نص قالب التفسير المرفق

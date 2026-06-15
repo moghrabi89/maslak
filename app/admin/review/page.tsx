@@ -70,6 +70,20 @@ const previewTemplates: QuestionTemplate[] = [
     templateText: "توضأ شخص ثم {scenario}، ما حكم وضوئه وطهارته في مذهب الشافعية؟",
     explanationTemplate: "صحيح! حكمه هو: ({item}). العلة هي: {reason}.",
   },
+  {
+    id: "tmpl_true_false",
+    type: "true_false",
+    difficulty: "easy",
+    templateText: "هل العبارة التالية صحيحة؟ {concept}",
+    explanationTemplate: "شرح السؤال: {item}.",
+  },
+  {
+    id: "tmpl_fill_in",
+    type: "fill_in",
+    difficulty: "medium",
+    templateText: "املأ الفراغ في النص التالي المتعلق بـ {concept}",
+    explanationTemplate: "الإجابة الصحيحة: {item}.",
+  },
 ];
 
 function toGeneratorConcept(concept: PendingConcept): Concept {
@@ -281,6 +295,12 @@ export default function AdminReviewPage() {
                         >
                           <AlertTriangle className="w-3.5 h-3.5 text-brand-gold-500" /> طلب تعديل
                         </Button>
+                        <Button 
+                          onClick={() => openDecisionModal({ id: lesson.id, title: lesson.title, entityType: "lesson" }, "reject")}
+                          className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 font-bold text-[10px] py-1.5 px-3 rounded-lg cursor-pointer flex items-center gap-1"
+                        >
+                          رفض
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -351,11 +371,59 @@ export default function AdminReviewPage() {
                           >
                             <AlertTriangle className="w-3.5 h-3.5 text-brand-gold-500" /> طلب تعديل
                           </Button>
+                          <Button 
+                            onClick={() => openDecisionModal({ id: concept.id, title: concept.conceptName, entityType: "concept" }, "reject")}
+                            className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 font-bold text-[10px] py-1.5 px-3 rounded-lg cursor-pointer flex items-center gap-1"
+                          >
+                            رفض
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
+
+                {/* 3. Question Templates pending */}
+                <h3 className="text-sm font-bold text-slate-400 pt-4 border-t border-slate-850">قوالب الأسئلة</h3>
+                {pending.templates.length > 0 ? (
+                  pending.templates.map((tmpl) => (
+                    <Card key={tmpl.id} className="glass-panel border-slate-850 text-slate-100">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex justify-between items-start gap-2">
+                          <div>
+                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold">
+                              قالب سؤال {tmpl.type === "recall" ? "استذكار" : tmpl.type === "distinguish" ? "تمييز" : tmpl.type === "apply" ? "تطبيق" : tmpl.type === "synthesis" ? "تركيب" : tmpl.type === "true_false" ? "صح/خطأ" : "إكمال"}
+                            </span>
+                            <p className="text-[10px] text-slate-300 mt-1.5">{tmpl.templateText}</p>
+                            <p className="text-[9px] text-slate-500 mt-1">الصعوبة: {tmpl.difficulty === "easy" ? "سهل" : tmpl.difficulty === "medium" ? "متوسط" : "صعب"}</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-850">
+                          <Button 
+                            onClick={() => openDecisionModal({ id: tmpl.id, title: tmpl.templateText.slice(0, 40), entityType: "question_template" }, "approve")}
+                            className="bg-brand-emerald-500 hover:bg-brand-emerald-600 text-slate-950 font-bold text-[10px] py-1.5 px-3 rounded-lg cursor-pointer flex items-center gap-1"
+                          >
+                            <Check className="w-3.5 h-3.5" /> اعتماد
+                          </Button>
+                          <Button 
+                            onClick={() => openDecisionModal({ id: tmpl.id, title: tmpl.templateText.slice(0, 40), entityType: "question_template" }, "changes")}
+                            className="bg-slate-900 border border-slate-800 hover:bg-slate-850 text-slate-300 font-bold text-[10px] py-1.5 px-3 rounded-lg cursor-pointer flex items-center gap-1"
+                          >
+                            <AlertTriangle className="w-3.5 h-3.5 text-brand-gold-500" /> طلب تعديل
+                          </Button>
+                          <Button 
+                            onClick={() => openDecisionModal({ id: tmpl.id, title: tmpl.templateText.slice(0, 40), entityType: "question_template" }, "reject")}
+                            className="bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 font-bold text-[10px] py-1.5 px-3 rounded-lg cursor-pointer flex items-center gap-1"
+                          >
+                            رفض
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <p className="text-[10px] text-slate-500 py-2">لا توجد قوالب أسئلة معلقة للمراجعة.</p>
+                )}
 
               </div>
             ) : (

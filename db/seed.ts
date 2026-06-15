@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { db } from "./index";
+import { eq } from "drizzle-orm";
 import { 
   levels, 
   books, 
@@ -9,7 +10,8 @@ import {
   fiqhReferences, 
   conceptBank, 
   questionTemplates,
-  badges
+  badges,
+  contentReviews
 } from "./schema";
 import { BADGE_CATALOG } from "../data/badges";
 
@@ -42,33 +44,33 @@ async function main() {
   console.log("🌱 Seeding Books...");
   const bookData = [
     // Level 0
-    { id: "safina", levelId: 0, title: "سفينة النجاة", author: "الشيخ سالم بن سمير الحضرمي", description: "متن مختصر عظيم النفع للمبتدئين في أصول الدين والفقه", order: 1, status: "published" as const },
-    { id: "yaqut", levelId: 0, title: "الياقوت النفيس", author: "السيد أحمد بن عمر الشاطري", description: "متن فقهي مميز بعبارته العصرية ووضوح تبويبه", order: 2, status: "draft" as const },
-    { id: "muqaddimah_hadramiyyah", levelId: 0, title: "المقدمة الحضرمية", author: "الشيخ عبد الله بن عبد الرحمن بافضل", description: "شرح واسع التفصيل في ربع العبادات لضبط فروع الطهارة والصلاة", order: 3, status: "draft" as const },
+    { id: "safina", levelId: 0, title: "سفينة النجاة", author: "الشيخ سالم بن سمير الحضرمي", description: "متن مختصر عظيم النفع للمبتدئين في أصول الدين والفقه", type: "matn" as const, order: 1, status: "published" as const },
+    { id: "yaqut", levelId: 0, title: "الياقوت النفيس", author: "السيد أحمد بن عمر الشاطري", description: "متن فقهي مميز بعبارته العصرية ووضوح تبويبه", type: "matn" as const, order: 2, status: "draft" as const },
+    { id: "muqaddimah_hadramiyyah", levelId: 0, title: "المقدمة الحضرمية", author: "الشيخ عبد الله بن عبد الرحمن بافضل", description: "شرح واسع التفصيل في ربع العبادات لضبط فروع الطهارة والصلاة", type: "commentary" as const, order: 3, status: "draft" as const },
     
     // Level 1
-    { id: "abi_shuja", levelId: 1, title: "متن أبي شجاع", author: "القاضي أبو شجاع", description: "عمدة المتون المختصرة الشاملة لجميع أبواب الفقه", order: 1, status: "draft" as const },
-    { id: "fath_alqareeb", levelId: 1, title: "فتح القريب المجيب", author: "ابن قاسم الغزي", description: "شرح مباشر وسهل لفك عبارات متن الغاية والتقريب", order: 2, status: "draft" as const },
-    { id: "kifayat_alakhyar", levelId: 1, title: "كفاية الأخيار", author: "الشيخ تقي الدين الحصني", description: "شرح متوسع يذكر الأدلة الفقهية والتعليلات الشرعية للمسائل", order: 3, status: "draft" as const },
+    { id: "abi_shuja", levelId: 1, title: "متن أبي شجاع", author: "القاضي أبو شجاع", description: "عمدة المتون المختصرة الشاملة لجميع أبواب الفقه", type: "matn" as const, order: 1, status: "draft" as const },
+    { id: "fath_alqareeb", levelId: 1, title: "فتح القريب المجيب", author: "ابن قاسم الغزي", description: "شرح مباشر وسهل لفك عبارات متن الغاية والتقريب", type: "commentary" as const, order: 2, status: "draft" as const },
+    { id: "kifayat_alakhyar", levelId: 1, title: "كفاية الأخيار", author: "الشيخ تقي الدين الحصني", description: "شرح متوسع يذكر الأدلة الفقهية والتعليلات الشرعية للمسائل", type: "commentary" as const, order: 3, status: "draft" as const },
     
     // Level 2
-    { id: "umdat_assalik", levelId: 2, title: "عمدة السالك وعدة الناسك", author: "ابن النقيب المصري", description: "متن دقيق ومنظم وأوسع مسائل من متن أبي شجاع", order: 1, status: "draft" as const },
-    { id: "manhaj_alqawim", levelId: 2, title: "المنهج القويم", author: "ابن حجر الهيتمي", description: "شرح مميز على المقدمة الحضرمية يُعد من ركائز الفتوى في العبادات", order: 2, status: "draft" as const },
-    { id: "fath_almuin", levelId: 2, title: "فتح المعين بشرح قرة العين", author: "الشيخ زين الدين المليباري", description: "شرح دقيق يعتمد عليه متأخرو الشافعية في الفتوى والقضاء", order: 3, status: "draft" as const },
-    { id: "ianat_attalibin", levelId: 2, title: "إعانة الطالبين", author: "السيد البكري الدمياطي", description: "حاشية موسعة على فتح المعين تفيد في تفريعات المسائل الحادثة", order: 4, status: "draft" as const },
- 
+    { id: "umdat_assalik", levelId: 2, title: "عمدة السالك وعدة الناسك", author: "ابن النقيب المصري", description: "متن دقيق ومنظم وأوسع مسائل من متن أبي شجاع", type: "matn" as const, order: 1, status: "draft" as const },
+    { id: "manhaj_alqawim", levelId: 2, title: "المنهج القويم", author: "ابن حجر الهيتمي", description: "شرح مميز على المقدمة الحضرمية يُعد من ركائز الفتوى في العبادات", type: "commentary" as const, order: 2, status: "draft" as const },
+    { id: "fath_almuin", levelId: 2, title: "فتح المعين بشرح قرة العين", author: "الشيخ زين الدين المليباري", description: "شرح دقيق يعتمد عليه متأخرو الشافعية في الفتوى والقضاء", type: "commentary" as const, order: 3, status: "draft" as const },
+    { id: "ianat_attalibin", levelId: 2, title: "إعانة الطالبين", author: "السيد البكري الدمياطي", description: "حاشية موسعة على فتح المعين تفيد في تفريعات المسائل الحادثة", type: "commentary" as const, order: 4, status: "draft" as const },
+
     // Level 3
-    { id: "minhaj_attalibin", levelId: 3, title: "منهاج الطالبين", author: "الإمام النووي", description: "عمدة التحقيق والفتوى في المذهب الشافعي بألفاظه المحررة", order: 1, status: "draft" as const },
-    { id: "mughni_almuhtaj", levelId: 3, title: "مغني المحتاج", author: "الخطيب الشربيني", description: "شرح واضح العبارة وسهل التقريب لمسائل المنهاج", order: 2, status: "draft" as const },
-    { id: "nihayat_almuhtaj", levelId: 3, title: "نهاية المحتاج", author: "الإمام شمس الدين الرملي", description: "ركيزة الفتوى المعتمدة لدى المحققين من متأخري الشافعية", order: 3, status: "draft" as const },
-    { id: "tuhfat_almuhtaj", levelId: 3, title: "تحفة المحتاج", author: "الإمام ابن حجر الهيتمي", description: "أعلى مصنفات التحرير الفقهي والفتوى المعتمدة في المذهب", order: 4, status: "draft" as const },
-    { id: "hawashi_shirwani", levelId: 3, title: "حواشي الشرواني والعبادي", author: "الشيخ الشرواني والعبادي", description: "حاشية دقيقة تفصل تحقيقات تحفة المحتاج الفقهية", order: 5, status: "draft" as const },
- 
+    { id: "minhaj_attalibin", levelId: 3, title: "منهاج الطالبين", author: "الإمام النووي", description: "عمدة التحقيق والفتوى في المذهب الشافعي بألفاظه المحررة", type: "matn" as const, order: 1, status: "draft" as const },
+    { id: "mughni_almuhtaj", levelId: 3, title: "مغني المحتاج", author: "الخطيب الشربيني", description: "شرح واضح العبارة وسهل التقريب لمسائل المنهاج", type: "commentary" as const, order: 2, status: "draft" as const },
+    { id: "nihayat_almuhtaj", levelId: 3, title: "نهاية المحتاج", author: "الإمام شمس الدين الرملي", description: "ركيزة الفتوى المعتمدة لدى المحققين من متأخري الشافعية", type: "commentary" as const, order: 3, status: "draft" as const },
+    { id: "tuhfat_almuhtaj", levelId: 3, title: "تحفة المحتاج", author: "الإمام ابن حجر الهيتمي", description: "أعلى مصنفات التحرير الفقهي والفتوى المعتمدة في المذهب", type: "commentary" as const, order: 4, status: "draft" as const },
+    { id: "hawashi_shirwani", levelId: 3, title: "حواشي الشرواني والعبادي", author: "الشيخ الشرواني والعبادي", description: "حاشية دقيقة تفصل تحقيقات تحفة المحتاج الفقهية", type: "commentary" as const, order: 5, status: "draft" as const },
+
     // Level 4
-    { id: "muhazzab", levelId: 4, title: "المهذب في فقه الشافعي", author: "الإمام الشيرازي", description: "شرح عمدة لضبط الأدلة العقلية والنقلية ومسائل فقه العراقيين", order: 1, status: "draft" as const },
-    { id: "majmu", levelId: 4, title: "المجموع شرح المهذب", author: "الإمام النووي", description: "الموسوعة الأعظم للفقه المقارن والأدلة والاستدلال المذهبي", order: 2, status: "draft" as const },
-    { id: "rawdat_attalibin", levelId: 4, title: "روضة الطالبين", author: "الإمام النووي", description: "مرجع واسع لتحقيق الفتاوى وتحرير المسائل قبل المنهاج", order: 3, status: "draft" as const },
-    { id: "umm", levelId: 4, title: "الأم", author: "الإمام محمد بن إدريس الشافعي", description: "المصدر الأم والمنبع الأول لفقه المذهب من كلام الشافعي مباشرة", order: 4, status: "draft" as const }
+    { id: "muhazzab", levelId: 4, title: "المهذب في فقه الشافعي", author: "الإمام الشيرازي", description: "شرح عمدة لضبط الأدلة العقلية والنقلية ومسائل فقه العراقيين", type: "reference" as const, order: 1, status: "draft" as const },
+    { id: "majmu", levelId: 4, title: "المجموع شرح المهذب", author: "الإمام النووي", description: "الموسوعة الأعظم للفقه المقارن والأدلة والاستدلال المذهبي", type: "reference" as const, order: 2, status: "draft" as const },
+    { id: "rawdat_attalibin", levelId: 4, title: "روضة الطالبين", author: "الإمام النووي", description: "مرجع واسع لتحقيق الفتاوى وتحرير المسائل قبل المنهاج", type: "reference" as const, order: 3, status: "draft" as const },
+    { id: "umm", levelId: 4, title: "الأم", author: "الإمام محمد بن إدريس الشافعي", description: "المصدر الأم والمنبع الأول لفقه المذهب من كلام الشافعي مباشرة", type: "reference" as const, order: 4, status: "draft" as const }
   ];
   await db.insert(books).values(bookData);
  
@@ -165,7 +167,7 @@ async function main() {
       content: "عَلَامَاتُ الْبُلُوغِ ثَلَاثٌ: تَمَامُ خَمْسَ عَشْرَةَ سَنَةً فِي الذَّكَرِ وَالْأُنْثَى، وَالِاحْتِلَامُ فِي الذَّكَرِ وَالْأُنْثَى لِتِسْعِ سِنِينَ، وَالْحَيْضُ فِي الْأُنْثَى لِتِسْعِ سِنِينَ.",
       order: 1,
       xpReward: 15,
-      status: "published" as const
+      status: "draft" as const
     },
     {
       id: "lesson_istinja",
@@ -174,7 +176,7 @@ async function main() {
       content: "شُرُوطُ إِجْزَاءِ الْحَجَرِ ثَمَانِيَةٌ: أَنْ يَكُونَ بِثَلَاثَةِ أَحْجَارٍ، وَأَنْ يُنْقِيَ الْمَحَلَّ، وَأَنْ لَا يَجِفَّ الْخَارِجُ، وَلَا يَنْتَقِلَ، وَلَا يَطْرَأَ عَلَيْهِ غَيْرُهُ، وَلَا يُجَاوِزَ صَفْحَتَهُ وَحَشَفَتَهُ، وَلَا يُصِيبَهُ مَاءٌ، وَأَنْ تَكُونَ الْأَحْجَارُ طَاهِرَةً.",
       order: 2,
       xpReward: 15,
-      status: "published" as const
+      status: "draft" as const
     },
     {
       id: "lesson_wudu_pillars",
@@ -183,7 +185,7 @@ async function main() {
       content: "فُرُوضُ الْوُضُوءِ سِتَّةٌ: الْأَوَّلُ: النِّيَّةُ عِنْدَ غَسْلِ الْوَجْهِ، الثَّانِي: غَسْلُ الْوَجْهِ، الثَّالِثُ: غَسْلُ الْيَدَيْنِ مَعَ الْمِرْفَقَيْنِ، الرَّابِعُ: مَسْحُ شَيْءٍ مِنَ الرَّأْسِّ، الْخَامِسُ: غَسْلُ الرِّجْلَيْنِ مَعَ الْكَعْبَيْنِ، السَّادِسُ: التَّرْتِيبُ.",
       order: 3,
       xpReward: 15,
-      status: "published" as const
+      status: "draft" as const
     },
     {
       id: "lesson_wudu_conds",
@@ -192,7 +194,7 @@ async function main() {
       content: "شُرُوطُ الْوُضُوءِ عَشَرَةٌ: الْإِسْلَامُ، وَالتَّمْيِيزُ، وَالطَّهَارَةُ عَنِ الْحَيْضِ وَالنِّفَاسِ، وَعَمَّا يَمْنَعُ وُصُولَ الْمَاءِ إِلَى الْبَشَرَةِ، وَأَنْ لَا يَكُونَ عَلَى الْعُضْوِ مَا يُغَيِّرُ الْمَاءَ، وَالْعِلْمُ بِفَرْضِيَّتِهِ، وَأَنْ لَا يَعْتَقِدَ فَرْضاً مِنْ فُرُوضِهِ سُنَّةً، وَالْمَاءُ الطَّهُورُ، وَدُخُولُ الْوَقْتِ، وَالْمُوَالَاةُ لِدَائِمِ الْحَدَثِ.",
       order: 4,
       xpReward: 15,
-      status: "published" as const
+      status: "draft" as const
     },
     {
       id: "lesson_wudu_invals",
@@ -201,7 +203,7 @@ async function main() {
       content: "نَوَاقِضُ الْوُضُوءِ أَرْبَعَةُ أَشْيَاءَ: الْأَوَّلُ: الْخَارِجُ مِنْ أَحَدِ السَّبِيلَيْنِ مِنْ قُبُلٍ أَوْ دُبُرٍ رِيحٌ أَوْ غَيْرُهُ إِلَّا الْمَنِيَّ، الثَّانِي: زَوَالُ الْعَقْلِ بِنَوْمٍ أَوْ غَيْرِهِ إِلَّا نَوْمَ قَاعِدٍ مُمَكِّنٍ مَقْعَدَهُ مِنَ الْأَرْضِ، الثَّالِثُ: الْتِقَاءُ بَشَرَتَيْ ذَكَرٍ وَأُنْثَى كَبِيرَيْنِ أَجْنَبِيَّيْنِ مِنْ غَيْرِ حَائِلٍ، الرَّابِعُ: مَسُّ قُبُلِ الْآدَمِيِّ أَوْ حَلْقَةِ دُبُرِهِ بِبَطْنِ الرَّاحَةِ أَوْ بُطُونِ الْأَصَابِعِ.",
       order: 5,
       xpReward: 15,
-      status: "published" as const
+      status: "draft" as const
     },
     {
       id: "lesson_ghusl",
@@ -210,7 +212,7 @@ async function main() {
       content: "مُوجِبَاتُ الْغُسْلِ سِتَّةٌ: إِيلَاجُ الْحَشَفَةِ فِي الْفَرْجِ، وَخُرُوجُ الْمَنِيِّ، وَالْمَوْتُ، وَالْحَيْضُ، وَالنِّفَاسُ، وَالْوِلَادَةُ. وَفُرُوضُهُ اثْنَانِ: النِّيَّةُ، وَتَعْمِيمُ الْبَدَنِ بِالْمَاءِ.",
       order: 6,
       xpReward: 15,
-      status: "published" as const
+      status: "draft" as const
     }
   ];
   await db.insert(lessons).values(lessonData);
@@ -227,8 +229,8 @@ async function main() {
       rulingLevel: "beginner" as const,
       madhhabPosition: "mutamad" as const,
       notesForAdvancedStudents: "تنبيه: تحسب السنون في التكليف الشرعي بالتقويم الهجري القمري وليس الميلادي الشمسي.",
-      scientificConfidence: 100,
-      status: "published" as const,
+      scientificConfidence: 0,
+      status: "draft" as const,
       data: {
         name: "علامات البلوغ",
         pillars: [],
@@ -253,8 +255,8 @@ async function main() {
       rulingLevel: "beginner" as const,
       madhhabPosition: "mutamad" as const,
       notesForAdvancedStudents: "يجب أن تكون الأحجار قالعة للنجاسة غير محترمة (مثل الخبز أو كتب العلم).",
-      scientificConfidence: 100,
-      status: "published" as const,
+      scientificConfidence: 0,
+      status: "draft" as const,
       data: {
         name: "شروط الاستنجاء بالحجر",
         pillars: [],
@@ -284,8 +286,8 @@ async function main() {
       rulingLevel: "beginner" as const,
       madhhabPosition: "mutamad" as const,
       notesForAdvancedStudents: "تجب النية مقترنة بغسل أول جزء من الوجه، والترتيب ركن أساسي يبطل الوضوء بتركه عمداً أو سهواً.",
-      scientificConfidence: 100,
-      status: "published" as const,
+      scientificConfidence: 0,
+      status: "draft" as const,
       data: {
         name: "فروض الوضوء",
         pillars: [
@@ -313,8 +315,8 @@ async function main() {
       rulingLevel: "beginner" as const,
       madhhabPosition: "mutamad" as const,
       notesForAdvancedStudents: "دائم الحدث (مثل سلس البول) يلزمه الوضوء لكل صلاة فرض بعد دخول وقتها والموالاة بين أفعاله وصلاة الفرض.",
-      scientificConfidence: 100,
-      status: "published" as const,
+      scientificConfidence: 0,
+      status: "draft" as const,
       data: {
         name: "شروط الوضوء",
         pillars: [],
@@ -346,8 +348,8 @@ async function main() {
       rulingLevel: "beginner" as const,
       madhhabPosition: "mutamad" as const,
       notesForAdvancedStudents: "لمس المرأة ينقض الوضوء عند الشافعية بلا حائل وبغض النظر عن وجود شهوة، بشرط أن يبلغا حد الشهوة.",
-      scientificConfidence: 100,
-      status: "published" as const,
+      scientificConfidence: 0,
+      status: "draft" as const,
       data: {
         name: "نواقض الوضوء",
         pillars: [],
@@ -375,8 +377,8 @@ async function main() {
       rulingLevel: "beginner" as const,
       madhhabPosition: "mutamad" as const,
       notesForAdvancedStudents: "خروج المني يوجب الغسل ولا ينقض الوضوء، ويجب غسل باطن الأذن والمغابن وكل جزء من البشرة والشعر.",
-      scientificConfidence: 100,
-      status: "published" as const,
+      scientificConfidence: 0,
+      status: "draft" as const,
       data: {
         name: "موجبات وفروض الغسل",
         pillars: [
@@ -406,7 +408,7 @@ async function main() {
       difficulty: "easy" as const,
       templateText: "أي مما يلي يعتبر ركناً/فرضاً من {concept}؟",
       explanationTemplate: "نعم! يعتبر ({item}) ركناً أساسياً من أركان {concept} كما ورد في المتن المعتمد.",
-      status: "published" as const
+      status: "draft" as const
     },
     {
       id: "tmpl_distinguish_condition",
@@ -414,7 +416,7 @@ async function main() {
       difficulty: "medium" as const,
       templateText: "أي مما يلي ليس من {concept}؟",
       explanationTemplate: "إجابة صحيحة! ({item}) ليس من {concept}.",
-      status: "published" as const
+      status: "draft" as const
     },
     {
       id: "tmpl_apply_ruling",
@@ -422,7 +424,7 @@ async function main() {
       difficulty: "hard" as const,
       templateText: "توضأ شخص ثم {scenario}، ما حكم وضوئه وطهارته في مذهب الشافعية؟",
       explanationTemplate: "صحيح! حكمه هو: ({item}). العلة هي: {reason}.",
-      status: "published" as const
+      status: "draft" as const
     },
     {
       id: "tmpl_synthesis_invalidators",
@@ -430,7 +432,23 @@ async function main() {
       difficulty: "hard" as const,
       templateText: "أي من الحالات التالية تؤدي إلى بطلان {concept} بالكامل؟",
       explanationTemplate: "رائع! الحالة التي تبطل {concept} هي: ({item}). لأنها تجمع نواقض أو تبطل شروط الصحة المعتمدة.",
-      status: "published" as const
+      status: "draft" as const
+    },
+    {
+      id: "tmpl_true_false",
+      type: "true_false" as const,
+      difficulty: "easy" as const,
+      templateText: "هل العبارة التالية صحيحة؟ {concept}",
+      explanationTemplate: "شرح السؤال: {item}.",
+      status: "draft" as const
+    },
+    {
+      id: "tmpl_fill_in",
+      type: "fill_in" as const,
+      difficulty: "medium" as const,
+      templateText: "املأ الفراغ في النص التالي المتعلق بـ {concept}",
+      explanationTemplate: "الإجابة الصحيحة: {item}.",
+      status: "draft" as const
     }
   ];
   await db.insert(questionTemplates).values(templateData);
@@ -438,6 +456,82 @@ async function main() {
   // 10. Seed Badges
   console.log("🌱 Seeding Badges...");
   await db.insert(badges).values([...BADGE_CATALOG]).onConflictDoNothing();
+
+  // 11. Approve MVP content through the review workflow to demonstrate proper content lifecycle
+  // In production, a reviewer would do this via the admin UI.
+  // Here we simulate the approval to make the platform functional for MVP.
+  console.log("📋 Approving MVP content through review workflow...");
+  const mvpLessonIds = [
+    "lesson_puberty",
+    "lesson_istinja",
+    "lesson_wudu_pillars",
+    "lesson_wudu_conds",
+    "lesson_wudu_invals",
+    "lesson_ghusl"
+  ];
+  const mvpConceptIds = [
+    "concept_puberty",
+    "concept_istinja",
+    "concept_wudu_pillars",
+    "concept_wudu_conds",
+    "concept_wudu_invals",
+    "concept_ghusl"
+  ];
+
+  // First, submit lessons and concepts for review
+  for (const lessonId of mvpLessonIds) {
+    await db.update(lessons).set({ status: "reviewed", updatedAt: new Date() }).where(eq(lessons.id, lessonId));
+  }
+  for (const conceptId of mvpConceptIds) {
+    await db.update(conceptBank).set({ status: "reviewed", updatedAt: new Date() }).where(eq(conceptBank.id, conceptId));
+  }
+
+  // Then approve all MVP content, setting audit trail
+  const now = new Date();
+  for (const lessonId of mvpLessonIds) {
+    await db.update(lessons).set({ status: "published", updatedAt: now }).where(eq(lessons.id, lessonId));
+    await db.insert(contentReviews).values({
+      id: `rev_seed_lesson_${lessonId}`,
+      entityType: "lesson",
+      entityId: lessonId,
+      reviewerId: "seed",
+      status: "approved",
+      notes: "موافقة تلقائية للمحتوى الأساسي للمرحلة الأولى (MVP)",
+      reviewedAt: now
+    });
+  }
+  for (const conceptId of mvpConceptIds) {
+    await db.update(conceptBank).set({
+      status: "published",
+      scientificConfidence: 100,
+      approvedBy: "seed",
+      reviewDate: now,
+      updatedAt: now
+    }).where(eq(conceptBank.id, conceptId));
+    await db.insert(contentReviews).values({
+      id: `rev_seed_concept_${conceptId}`,
+      entityType: "concept",
+      entityId: conceptId,
+      reviewerId: "seed",
+      status: "approved",
+      notes: "اعتماد المحتوى العلمي للمرحلة الأولى (MVP) بعد المراجعة",
+      reviewedAt: now
+    });
+  }
+
+  // Also approve the question templates
+  for (const tmpl of ["tmpl_recall_pillar", "tmpl_distinguish_condition", "tmpl_apply_ruling", "tmpl_synthesis_invalidators", "tmpl_true_false", "tmpl_fill_in"]) {
+    await db.update(questionTemplates).set({ status: "published", updatedAt: now }).where(eq(questionTemplates.id, tmpl));
+    await db.insert(contentReviews).values({
+      id: `rev_seed_template_${tmpl}`,
+      entityType: "question_template",
+      entityId: tmpl,
+      reviewerId: "seed",
+      status: "approved",
+      notes: "اعتماد قالب الأسئلة للمرحلة الأولى (MVP)",
+      reviewedAt: now
+    });
+  }
 
   console.log("✅ Database seeding completed successfully!");
 }
